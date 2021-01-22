@@ -77,7 +77,7 @@ Chaque EMR est constitué de 7 machines m4.xlarge permettant une exécution rapi
 
 Afin de stocker les données préprocessées dans un format exploitable facilement par l'utilisateur, tout en respectant notre souhait d'architecture résiliante, nous avons installé Cassandra **from scratch** sur un ensemble d'instances EC2.
 
-_Note : Pour configurer cette architecture chez vous, suivez ce [tutoriel](lien tuto)_
+_Note : Pour configurer cette architecture chez vous, suivez ce [Tutoriel Cassandra](https://github.com/MathiasNourry/Gdelt_project/tree/main/cassandra)
 
 **Configurations**
 * **EC2 instances** : M4Large 
@@ -180,26 +180,21 @@ limit 15
 
 ### 4. Limites et contraintes du modèle
 
+Le modèle présenté soulève quelques limites et contraintes
 
-    a) Contraintes liées à Cassandra
+Cassandra
 
-        Cassandra ne supporte ni les jointures ni les groupby car les jointures sur des machines différentes dans un système distribué ne sont pas performantes. Pour résoudre cela, nous avons dû passer par Spark SQL ce qui rajoute des étapes supplémentaires.   
+Bien que permettant de respecter nos objectifs de disponibilité et de tolérance aux pannes, Cassandra impose une rigidité dans les structures des tables et des requêtes (jointures, et agrégations moins souples qu'en SQL). Pour faciliter la tâche de l'utilisateur, nous avons fait le choix de créer des vues spark-sql sur la base des données requêtées dans Cassanra.
 
-    b) Cases vides
+Gdelt
 
-        Certains articles n’ont pas de Pays associés. Lors d’une requête par Pays, il y aura probablement une sous-évaluation du nombre d’articles
+L'analyse des données est à prendre dans son ensemble, sans faire de focus précis sur les éléments, en effet :
+- le filtre que nous appliquons sur l'url ne tient pas compte des articles référencés par un numéro &rarr; sous-estimation du nombre d'événements liés au COVID
+- nous ne traitons pas les données de pays manquantes &rarr; sous-estimation du nombre d'événements pour certaines régions
 
-    c) Mise en forme des données
+Compte AWS Educate
 
-        Certains articles sont référencés avec un numéro d’article, sachant que notre filtre se fait sur l'URL, ce dernier est potentiellement un article sur le Covid non détecté.
-
-    d) Limitations du compte "Educate"
-
-        Nous sommes limitées dans le nombre de machines réservées à un même cluster ce qui augmente le temps de téléchargement => 32 CPUs environ
-
-        Nécessité de répartir le téléchargement de l'ensemble des données entre plusieurs personnes. Chaque compte ayant 100 crédits et l'ensemble du projet coûtant plus que cela. Nous n'aurions pu tout effectuer sur un seul compte.
-
-        Du fait que nous ayons récupéré toutes les données sur une année, il aurait fallut pouvoir allouer des machines plus puissantes que m4.large à l'EC2 afin d'avoir un requêtage plus efficace.
-
-
-
+Finalement, une des contraintes les plus forte à été liée au compte AWS lui-même :
+- la limite de ressources machines disponible (32 CPUs) a augmenté les temps de traitements et les capacités de stockage
+- l'impossibilité de partager les ressources budgétaires (100$ par personne) nous a contraint a paralléliser les downloads et ETL dans le groupe, afin de mener à bien le projet (dont le coût a dépassé 100$)
+- le manque d'espace de stockage dans les choix de notre architecture ne nous a pas permit d'intégrer les données gkg dans le ring Cassandra
