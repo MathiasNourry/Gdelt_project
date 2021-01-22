@@ -37,7 +37,7 @@ L'étude d'un an de données correspond à environ **500Go** à traiter. Les cho
 Pour répondre aux besoins de l'analyse, nous avons mis en place une architecture basée déployée sur **Amazon Web Services** (AWS), au travers de technologies distribuées comme **Spark** et d'une base de données NoSQL, **Cassandra**.
 
 <p align="center">
-  <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/modele.png" width="700" />
+  <img src="img/modele.png" width="700" />
 </p>
 
 ***Choix de la techologie de base de données***
@@ -48,7 +48,7 @@ Le choix de la technologie de base de données sélectionné s'est fait sur la b
 - ***P***artition tolerance
 
 <p align="center">
-  <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/CAP.png" width="500" />
+  <img src="img/CAP.png" width="500" />
 </p>
 
 Le theorème CAP suggère qu'il faille faire un choix entre les trois caractéristiques de notre base.
@@ -58,7 +58,11 @@ Au final on souhaite donc une technologie permettant :
 - que le temps de requêtage soit relativement faible = ***A***vaibility
 
 
-***DataLake : bucket S3 et ETLs***
+***DataLake : bucket S3 et ETLs via EMR***
+
+<p align="center">
+  <img src="img/DataLake.png" width="500" />
+</p>
 
 Se plaçant dans une configuration professionnelle, notre solution repose sur une distinction claire entre un data lake accessible par des professionnels de la donnée, et un data warehouse disponible pour les applications métiers.
 
@@ -74,6 +78,10 @@ Dans un soucis de coûts limités par nos comptes AWS Educate, nous avons fait l
 Chaque EMR est constitué de 7 machines m4.xlarge permettant une exécution rapide des ETLs. Une fois les ETL 1 et 2 effectué, les EMR sont résiliés.  
 
 ***DataWarehouse : EC2 - Cassandra***
+
+<p align="center">
+  <img src="img/DataWarehouse.png" width="500" />
+</p>
 
 Le DataWarehouse consitute le lieux de stockage des données pré-traitées propre à l'application voulu par une business unit. Ces données sont directement destinées aux métiers et peuvent être analysés immédiatement. Dans notre cas cette business unit correspond à la recherche sur le COVID-19. Toutefois notre architecture permettrait d'instancier d'autres DataWarehouse destinés à d'autres business unit (juridique, marketing ...) en répliquant la partie EC2 - Cassandra.
 
@@ -91,7 +99,7 @@ Ces choix nous permettent en effet d'offrir à l'utilisateur la possibilité de 
 * **Load** ~1Go de données par noeud
 
 <p align="center">
-  <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/nodetool_status.png" width="700" />
+  <img src="img/nodetool_status.png" width="700" />
 </p>
 
 Les données **export** et **mentions** pour une année entière sont injectées dans 2 tables distinctes, permettant à l'utilisateur un requêtage simple et efficace.
@@ -109,7 +117,7 @@ mentions_from_cass.createOrReplaceTempView("mentions")
 ```
 
 <p align="center">
-  <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/export_table.png" width="500" />
+  <img src="img/export_table.png" width="500" />
 </p>
 
 **Nombre d'événements médiatiques relatifs au COVID, par date et pays**
@@ -130,7 +138,7 @@ order by nb_event desc
 ```
 
 <p align="center">
-  <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/COVID_events.png" width="1000" />
+  <img src="img/COVID_events.png" width="1000" />
 </p>
 
 **Nombre d'événements médiatiques relatifs au COVID, par pays et par langue**
@@ -153,11 +161,11 @@ group by
 order by nb_event desc
 ```
 <p align="center">
-  <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/COVID_events_France.png" width="1000" />
+  <img src="img/COVID_events_France.png" width="1000" />
 </p>
 
 <p align="center">
-  <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/COVID_events_India.png" width="1000" />
+  <img src="img/COVID_events_India.png" width="1000" />
 </p>
 
 **Nombre de mentions des évenements, par pays**
@@ -177,7 +185,7 @@ limit 15
 ```
 
 <p align="center">
-  <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/COVID_mentions.png" width="1000" />
+  <img src="img/COVID_mentions.png" width="1000" />
 </p>
 
 ### 4. Limites et contraintes du modèle
