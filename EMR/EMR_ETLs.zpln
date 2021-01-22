@@ -1,0 +1,603 @@
+﻿{
+  "paragraphs": [
+    {
+      "text": "    // Imports\n\nimport sys.process._\nimport java.net.URL\nimport java.io.File\nimport org.apache.spark.rdd.RDD\nimport java.nio.file.{Files, StandardCopyOption}\nimport java.io.{FileInputStream, FileOutputStream, BufferedReader, InputStreamReader}\nimport org.apache.spark.input.PortableDataStream\nimport java.util.zip.ZipInputStream\nimport scala.io.Source\nimport java.net.HttpURLConnection \nimport org.apache.spark.sql.functions._\nimport org.apache.spark.sql.SQLContext\nimport org.apache.spark.sql.DataFrame\nimport java.io.{File, FileWriter}\nimport org.apache.spark.sql.functions.udf\nimport org.apache.spark.util.SizeEstimator\nimport org.apache.spark.sql.functions.countDistinct\n\nimport com.amazonaws.services.s3.AmazonS3Client\nimport com.amazonaws.auth.BasicAWSCredentials\nimport com.amazonaws.auth.BasicSessionCredentials\nimport com.amazonaws.services.s3.model.{PutObjectRequest, ObjectMetadata}\n",
+      "user": "anonymous",
+      "dateUpdated": "2021-01-22T10:44:16+0100",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "import sys.process._\nimport java.net.URL\nimport java.io.File\nimport org.apache.spark.rdd.RDD\nimport java.nio.file.{Files, StandardCopyOption}\nimport java.io.{FileInputStream, FileOutputStream, BufferedReader, InputStreamReader}\nimport org.apache.spark.input.PortableDataStream\nimport java.util.zip.ZipInputStream\nimport scala.io.Source\nimport java.net.HttpURLConnection\nimport org.apache.spark.sql.functions._\nimport org.apache.spark.sql.SQLContext\nimport org.apache.spark.sql.DataFrame\nimport java.io.{File, FileWriter}\nimport org.apache.spark.sql.functions.udf\nimport org.apache.spark.util.SizeEstimator\nimport org.apache.spark.sql.functions.countDistinct\nimport com.amazonaws.services.s3.AmazonS3Client\nimport com.amazonaws.auth.BasicAWSCredentials\nimport com.amazonaws.auth.BasicSessionCredent..."
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1611307786827_2020153885",
+      "id": "20210116-092331_1111606374",
+      "dateCreated": "2021-01-22T10:29:46+0100",
+      "status": "READY",
+      "focus": true,
+      "$$hashKey": "object:3304"
+    },
+    {
+      "text": "    //Connexion AWS\n\nval AWS_ID = \"ASIATBPOCPZH3AITFNWE\"\nval AWS_KEY = \"a3R7jXwQEdH91DbMm6m2VMum+dYknZ8o5lozVHQm\"\nval AWS_SESSION_TOKEN = \"FwoGZXIvYXdzEMv//////////wEaDOIbFhm668T068tvRiLJAXo52NNhFabfGJ+4r937/A4Uhu8XzagI+4EAOTqv00D7oZ6kU2CIcRneG6ZM+OV9H1nKaTQNQ7JE6hap25lllPZJW+w345y0UvGFR8xHT+b9TYNZ7ymohVg8/TAjV23oPthNXX4lJ/gZpo7nTJ8tk6UcWC3XUulSAk7MSArf0SonUhJUOsrzORksZdIZJPewQ0ClSsCvR2POciqHhCC+pYrXSkQyDSpPWmu1H5jTh64J/YTFGl/kIJYFwEBNEar5V1yyxUUzWRHeqCjfzKGABjItIk6bcj25olSnZYZIF90FW+CPlTi9JH6sVS+nbPUC1fLSsUyzUEW9pwOvL1bS\"\n// la classe AmazonS3Client n'est pas serializable\n// on rajoute l'annotation @transient pour dire a Spark de ne pas essayer de serialiser cette classe et l'envoyer aux executeurs\n@transient val awsClient = new AmazonS3Client(new BasicSessionCredentials(AWS_ID, AWS_KEY, AWS_SESSION_TOKEN))\n\nsc.hadoopConfiguration.set(\"fs.s3a.access.key\", AWS_ID) // mettre votre ID du fichier credentials.csv\nsc.hadoopConfiguration.set(\"fs.s3a.secret.key\", AWS_KEY) // mettre votre secret du fichier credentials.csv\nsc.hadoopConfiguration.set(\"fs.s3a.session.token\", AWS_SESSION_TOKEN)\n",
+      "user": "anonymous",
+      "dateUpdated": "2021-01-22T10:43:21+0100",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "warning: there was one deprecation warning; re-run with -deprecation for details\nAWS_ID: String = ASIATBPOCPZH3AITFNWE\nAWS_KEY: String = a3R7jXwQEdH91DbMm6m2VMum+dYknZ8o5lozVHQm\nAWS_SESSION_TOKEN: String = FwoGZXIvYXdzEMv//////////wEaDOIbFhm668T068tvRiLJAXo52NNhFabfGJ+4r937/A4Uhu8XzagI+4EAOTqv00D7oZ6kU2CIcRneG6ZM+OV9H1nKaTQNQ7JE6hap25lllPZJW+w345y0UvGFR8xHT+b9TYNZ7ymohVg8/TAjV23oPthNXX4lJ/gZpo7nTJ8tk6UcWC3XUulSAk7MSArf0SonUhJUOsrzORksZdIZJPewQ0ClSsCvR2POciqHhCC+pYrXSkQyDSpPWmu1H5jTh64J/YTFGl/kIJYFwEBNEar5V1yyxUUzWRHeqCjfzKGABjItIk6bcj25olSnZYZIF90FW+CPlTi9JH6sVS+nbPUC1fLSsUyzUEW9pwOvL1bS\nawsClient: com.amazonaws.services.s3.AmazonS3Client = com.amazonaws.services.s3.AmazonS3Client@fcd3579\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1611307786827_1531861987",
+      "id": "20210118-200127_358167732",
+      "dateCreated": "2021-01-22T10:29:46+0100",
+      "status": "READY",
+      "$$hashKey": "object:3305"
+    },
+    {
+      "title": "ETL 1",
+      "text": "// Upload file from web on S3 bucket\ndef fileUploader(\n    urlFile: String, \n    bucketName: String, bucketFolder: String, \n    fileName: String\n    ) : String = {\n    \n    val url = new URL(urlFile)\n    \n    // Connexion to the URL adress\n    val connection = url.openConnection().asInstanceOf[HttpURLConnection]\n    connection.setConnectTimeout(5000)\n    connection.setReadTimeout(5000)\n    connection.connect()\n    \n    // If the connexion failed print error\n    if (connection.getResponseCode >= 400) {\n    \n        return(urlFile + \" => Fail\")\n      \n    }\n    // Else download file\n    else {\n    \n        // Downloading the file\n        awsClient.putObject(\n            new PutObjectRequest(\n                bucketName, \n                bucketFolder + fileName, \n                url.openStream(),\n                new ObjectMetadata()\n            )\n        )\n        \n        return(\"Succeed\")\n    \n    } \n}\n\ndef ETL_1(\n    urlMasterFile: String, MasterFileName: String, dateFilter: String,\n    bucketName: String, bucketFolder: String,\n    logFileName: String\n    ) = {\n        \n\n    // Stage 1 : Uploading Master file containing URL list of data files on s3\n    fileUploader(\n        urlMasterFile, \n        bucketName, \"\",\n        MasterFileName\n    )\n    \n    \n    // Stage 2 : Filtering URL of data files depending on the date filter\n    val filterFilesDF = spark.read\n        .option(\"delimiter\", \" \")\n        .csv(\"s3://\" + bucketName + \"/\" + MasterFileName)\n        .where($\"_c2\".contains(dateFilter))\n        .cache\n    \n    println(\"Number of data file to upload on S3 : \" + filterFilesDF.count())\n    \n    \n    // Stage 3 : Upload zip files on s3 bucket\n    filterFilesDF.select(\"_c2\").repartition(100).collect().par.foreach( r=> {\n    \n        // Upload file on S3 bucket\n        val URL = r.getAs[String](0)\n        val fileName = r.getAs[String](0).split(\"/\").last\n        val logUploadMessage = fileUploader(\n            URL,\n            bucketName, bucketFolder,\n            fileName\n        )\n        \n        // If upload failed, update logFile\n        if (logUploadMessage.contains(\"Fail\")) {\n            \n            var logUploadFileWriter = new FileWriter(\"/mnt/tmp/\" + logFileName, true)\n            logUploadFileWriter.write(logUploadMessage + \"\\n\")\n            logUploadFileWriter.close()\n            \n        }\n        \n    })\n    \n    // Stage 3 bis : If no problem occurs during the upload, we create an empty logUploadFile\n    val logUploadFile = new File(\"/mnt/tmp/\" + logFileName)\n    if (!logUploadFile.exists()) {\n        \n        var logUploadFileWriter = new FileWriter(\"/mnt/tmp/\" + logFileName, true)\n        logUploadFileWriter.write(\"\")\n        logUploadFileWriter.close()\n        \n    }\n\n    \n    // Stage 4 : Upload logUploadFile on S3 bucket and delete it on hdfs\n    awsClient.putObject(\n        new PutObjectRequest(\n            bucketName, \n            \"\" + logFileName, \n            logUploadFile\n        )\n    )\n    \n    logUploadFile.delete()\n    \n    println(\n        \"Number of data file failed to upload on S3 : \" + \n        spark.read.csv(\"s3://\" + bucketName + \"/\" + logFileName).count()\n    )\n    \n    \n}",
+      "user": "anonymous",
+      "dateUpdated": "2021-01-22T10:29:46+0100",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9,
+        "title": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "fileUploader: (urlFile: String, bucketName: String, bucketFolder: String, fileName: String)String\nETL_1: (urlMasterFile: String, MasterFileName: String, dateFilter: String, bucketName: String, bucketFolder: String, logFileName: String)Unit\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1611307786828_401601582",
+      "id": "20210116-112833_735350823",
+      "dateCreated": "2021-01-22T10:29:46+0100",
+      "status": "READY",
+      "$$hashKey": "object:3306"
+    },
+    {
+      "text": "// Masterfile\nETL_1(\n    \"http://data.gdeltproject.org/gdeltv2/masterfilelist.txt\", \"masterfilelist.txt\", \"202012\",\n    \"gdelt-tests\", \"raw_data/\",\n    \"log_upload_raw_data.txt\"\n    )",
+      "user": "anonymous",
+      "dateUpdated": "2021-01-22T10:29:46+0100",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "ERROR",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "Number of data file to upload on S3 : 8925\ncom.amazonaws.SdkClientException: Unable to create HTTP entity: Stream closed.\n  at com.amazonaws.http.apache.utils.ApacheUtils.newBufferedHttpEntity(ApacheUtils.java:145)\n  at com.amazonaws.http.apache.request.impl.ApacheHttpRequestFactory.createHttpEntityForNonPostVerbs(ApacheHttpRequestFactory.java:227)\n  at com.amazonaws.http.apache.request.impl.ApacheHttpRequestFactory.wrapEntity(ApacheHttpRequestFactory.java:188)\n  at com.amazonaws.http.apache.request.impl.ApacheHttpRequestFactory.createApacheRequest(ApacheHttpRequestFactory.java:144)\n  at com.amazonaws.http.apache.request.impl.ApacheHttpRequestFactory.create(ApacheHttpRequestFactory.java:94)\n  at com.amazonaws.http.apache.request.impl.ApacheHttpRequestFactory.create(ApacheHttpRequestFactory.java:51)\n  at com.amazonaws.http.AmazonHttpClient$RequestExecutor$ExecOneRequestParams.newApacheRequest(AmazonHttpClient.java:1975)\n  at com.amazonaws.http.AmazonHttpClient$RequestExecutor.executeOneRequest(AmazonHttpClient.java:1314)\n  at com.amazonaws.http.AmazonHttpClient$RequestExecutor.executeHelper(AmazonHttpClient.java:1145)\n  at com.amazonaws.http.AmazonHttpClient$RequestExecutor.doExecute(AmazonHttpClient.java:802)\n  at com.amazonaws.http.AmazonHttpClient$RequestExecutor.executeWithTimer(AmazonHttpClient.java:770)\n  at com.amazonaws.http.AmazonHttpClient$RequestExecutor.execute(AmazonHttpClient.java:744)\n  at com.amazonaws.http.AmazonHttpClient$RequestExecutor.access$500(AmazonHttpClient.java:704)\n  at com.amazonaws.http.AmazonHttpClient$RequestExecutionBuilderImpl.execute(AmazonHttpClient.java:686)\n  at com.amazonaws.http.AmazonHttpClient.execute(AmazonHttpClient.java:550)\n  at com.amazonaws.http.AmazonHttpClient.execute(AmazonHttpClient.java:530)\n  at com.amazonaws.services.s3.AmazonS3Client.invoke(AmazonS3Client.java:5219)\n  at com.amazonaws.services.s3.AmazonS3Client.invoke(AmazonS3Client.java:5165)\n  at com.amazonaws.services.s3.AmazonS3Client.access$300(AmazonS3Client.java:405)\n  at com.amazonaws.services.s3.AmazonS3Client$PutObjectStrategy.invokeServiceCall(AmazonS3Client.java:6180)\n  at com.amazonaws.services.s3.AmazonS3Client.uploadObject(AmazonS3Client.java:1824)\n  at com.amazonaws.services.s3.AmazonS3Client.putObject(AmazonS3Client.java:1784)\n  at fileUploader(<console>:75)\n  at $anonfun$ETL_1$1.apply(<console>:120)\n  at $anonfun$ETL_1$1.apply(<console>:115)\n  at scala.collection.parallel.mutable.ParArray$ParArrayIterator.foreach_quick(ParArray.scala:143)\n  at scala.collection.parallel.mutable.ParArray$ParArrayIterator.foreach(ParArray.scala:136)\n  at scala.collection.parallel.ParIterableLike$Foreach.leaf(ParIterableLike.scala:972)\n  at scala.collection.parallel.Task$$anonfun$tryLeaf$1.apply$mcV$sp(Tasks.scala:49)\n  at scala.collection.parallel.Task$$anonfun$tryLeaf$1.apply(Tasks.scala:48)\n  at scala.collection.parallel.Task$$anonfun$tryLeaf$1.apply(Tasks.scala:48)\n  at scala.collection.parallel.Task$class.tryLeaf(Tasks.scala:51)\n  at scala.collection.parallel.ParIterableLike$Foreach.tryLeaf(ParIterableLike.scala:969)\n  at scala.collection.parallel.AdaptiveWorkStealingTasks$WrappedTask$class.internal(Tasks.scala:169)\n  at scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$WrappedTask.internal(Tasks.scala:443)\n  at scala.collection.parallel.AdaptiveWorkStealingTasks$WrappedTask$class.compute(Tasks.scala:149)\n  at scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$WrappedTask.compute(Tasks.scala:443)\n  at scala.concurrent.forkjoin.RecursiveAction.exec(RecursiveAction.java:160)\n  at scala.concurrent.forkjoin.ForkJoinTask.doExec(ForkJoinTask.java:260)\n  at scala.concurrent.forkjoin.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:1339)\n  at scala.concurrent.forkjoin.ForkJoinPool.runWorker(ForkJoinPool.java:1979)\n  at scala.concurrent.forkjoin.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:107)\nCaused by: java.io.IOException: Stream closed.\n  at java.net.AbstractPlainSocketImpl.available(AbstractPlainSocketImpl.java:470)\n  at java.net.SocketInputStream.available(SocketInputStream.java:259)\n  at java.io.BufferedInputStream.read(BufferedInputStream.java:353)\n  at sun.net.www.MeteredStream.read(MeteredStream.java:134)\n  at java.io.FilterInputStream.read(FilterInputStream.java:133)\n  at sun.net.www.protocol.http.HttpURLConnection$HttpInputStream.read(HttpURLConnection.java:3454)\n  at com.amazonaws.internal.SdkFilterInputStream.read(SdkFilterInputStream.java:90)\n  at com.amazonaws.internal.SdkFilterInputStream.read(SdkFilterInputStream.java:90)\n  at com.amazonaws.services.s3.internal.MD5DigestCalculatingInputStream.read(MD5DigestCalculatingInputStream.java:128)\n  at java.io.BufferedInputStream.fill(BufferedInputStream.java:246)\n  at java.io.BufferedInputStream.read1(BufferedInputStream.java:286)\n  at java.io.BufferedInputStream.read(BufferedInputStream.java:345)\n  at com.amazonaws.internal.SdkBufferedInputStream.read(SdkBufferedInputStream.java:76)\n  at com.amazonaws.internal.SdkFilterInputStream.read(SdkFilterInputStream.java:90)\n  at com.amazonaws.event.ProgressInputStream.read(ProgressInputStream.java:180)\n  at com.amazonaws.internal.SdkFilterInputStream.read(SdkFilterInputStream.java:90)\n  at java.io.FilterInputStream.read(FilterInputStream.java:107)\n  at org.apache.http.entity.InputStreamEntity.writeTo(InputStreamEntity.java:133)\n  at com.amazonaws.http.RepeatableInputStreamRequestEntity.writeTo(RepeatableInputStreamRequestEntity.java:160)\n  at org.apache.http.entity.BufferedHttpEntity.<init>(BufferedHttpEntity.java:62)\n  at com.amazonaws.http.apache.utils.ApacheUtils.newBufferedHttpEntity(ApacheUtils.java:140)\n  ... 41 more\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1611307786829_122574909",
+      "id": "20210116-113504_368024909",
+      "dateCreated": "2021-01-22T10:29:46+0100",
+      "status": "READY",
+      "$$hashKey": "object:3307"
+    },
+    {
+      "text": "// Masterfile translation\nETL_1(\n    \"http://data.gdeltproject.org/gdeltv2/masterfilelist-translation.txt\", \"masterfilelist-translation.txt\", \"2020121\",\n    \"gdelt-tests\", \"raw_data/\",\n    \"log_upload_raw_data_translation.txt\"\n    )",
+      "user": "anonymous",
+      "dateUpdated": "2021-01-22T10:29:46+0100",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "Number of data file to upload on S3 : 2874\nNumber of data file failed to upload on S3 : 0\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1611307786830_359147921",
+      "id": "20210116-145625_816291929",
+      "dateCreated": "2021-01-22T10:29:46+0100",
+      "status": "READY",
+      "$$hashKey": "object:3308"
+    },
+    {
+      "title": "ETL 2",
+      "text": "\n// Stage 1 : Ouverture des .zip en RDD\n\nval export_RDD_translation = sc.binaryFiles(\"s3://gdelt-tests/raw_data/*translation.export.CSV.zip\").\n   flatMap {  // decompresser les fichiers\n       case (name: String, content: PortableDataStream) =>\n          val zis = new ZipInputStream(content.open)\n          Stream.continually(zis.getNextEntry).\n                takeWhile{ case null => zis.close(); false\n                       case _ => true }.\n                flatMap { _ =>\n                    val br = new BufferedReader(new InputStreamReader(zis))\n                    Stream.continually(br.readLine()).takeWhile(_ != null)\n                }\n    }\n\n\n\nval export_RDD_ENG = sc.binaryFiles(\"s3://gdelt-tests/raw_data/*00.export.CSV.zip\").\n   flatMap {  // decompresser les fichiers\n       case (name: String, content: PortableDataStream) =>\n          val zis = new ZipInputStream(content.open)\n          Stream.continually(zis.getNextEntry).\n                takeWhile{ case null => zis.close(); false\n                       case _ => true }.\n                flatMap { _ =>\n                    val br = new BufferedReader(new InputStreamReader(zis))\n                    Stream.continually(br.readLine()).takeWhile(_ != null)\n                }\n    }\n    \n    \nval mentions_RDD = sc.binaryFiles(\"s3://gdelt-tests/raw_data/*.mentions.CSV.zip\"). \n   flatMap {  // decompresser les fichiers\n       case (name: String, content: PortableDataStream) =>\n          val zis = new ZipInputStream(content.open)\n          Stream.continually(zis.getNextEntry).\n                takeWhile{ case null => zis.close(); false\n                       case _ => true }.\n                flatMap { _ =>\n                    val br = new BufferedReader(new InputStreamReader(zis))\n                    Stream.continually(br.readLine()).takeWhile(_ != null)\n                }\n    }\n    \nval gkg_RDD = sc.binaryFiles(\"s3://gdelt-tests/raw_data/*.gkg.csv.zip\"). \n   flatMap {  // decompresser les fichiers\n       case (name: String, content: PortableDataStream) =>\n          val zis = new ZipInputStream(content.open)\n          Stream.continually(zis.getNextEntry).\n                takeWhile{ case null => zis.close(); false\n                       case _ => true }.\n                flatMap { _ =>\n                    val br = new BufferedReader(new InputStreamReader(zis))\n                    Stream.continually(br.readLine()).takeWhile(_ != null)\n                }\n    }\n    \n    // Stage 2 : Transformation des RDD en DataFrame\n    \nval export_DF_translation = export_RDD_translation.map(x => x.split(\"\\t\")).toDF()\nval export_DF_ENG = export_RDD_ENG.map(x => x.split(\"\\t\")).toDF()\nval mentions_DF = mentions_RDD.map(x => x.split(\"\\\\\\t\")).toDF()\nval gkg_DF = gkg_RDD.map(x => x.split(\"\\t\")).toDF()\n\n\n    // Stage 3 : Préprocessing des données en séléctionnant les bonnes colonnes\n    \nval export_DF_translation_preproc = export_DF_translation\n    .withColumn(\"_tmp\", $\"value\")\n    .select(\n        $\"_tmp\".getItem(0).as(\"globaleventid\"),\n        $\"_tmp\".getItem(1).as(\"days\"),\n        $\"_tmp\".getItem(52).as(\"country\"),\n        $\"_tmp\".getItem(60).as(\"url\"),\n        $\"_tmp\".getItem(53).as(\"language\")\n    )\n    \n    .withColumn(\"country\", split($\"country\", \",\")).withColumn(\"country\", expr(\"country[ size(country) -1 ]\"))\n    .filter($\"url\".contains(\"covid\") || $\"url\".contains(\"coronavirus\"))\n    .na.fill(\"null\")\n\nval export_DF_ENG_preproc = export_DF_ENG\n    .withColumn(\"_tmp\", $\"value\")\n    .select(\n        $\"_tmp\".getItem(0).as(\"globaleventid\"),\n        $\"_tmp\".getItem(1).as(\"days\"),\n        $\"_tmp\".getItem(52).as(\"country\"),\n        $\"_tmp\".getItem(60).as(\"url\")\n    )\n    .withColumn(\"language\",lit(\"ENG\"))\n    .withColumn(\"country\", split($\"country\", \",\")).withColumn(\"country\", expr(\"country[ size(country) -1 ]\"))\n    .filter($\"url\".contains(\"covid\") || $\"url\".contains(\"coronavirus\"))\n    .na.fill(\"null\")\n\n     // Union des deux DF concernant l'export. Une distinction entre les .translation et le reste à été faite afin d'ajouter une colonne langue \nval export_DF_preproc = export_DF_ENG_preproc.union(export_DF_translation_preproc).toDF\n    \n\nval mentions_DF_preproc = mentions_DF\n    .withColumn(\"_tmp\", $\"value\")\n    .select(\n        $\"_tmp\".getItem(0).as(\"globaleventid\"),\n        $\"_tmp\".getItem(5).as(\"mention\")\n    )\n    .filter($\"mention\".contains(\"covid\") || $\"mention\".contains(\"coronavirus\"))\n    .na.fill(\"null\")\n    \nval gkg_DF_temp = gkg_DF\n    .withColumn(\"_tmp\", $\"value\")\n    .select(\n        $\"_tmp\".getItem(1).as(\"Date\"),\n        $\"_tmp\".getItem(7).as(\"Theme\"),\n        $\"_tmp\".getItem(9).as(\"Location\"),\n        $\"_tmp\".getItem(11).as(\"Person\"),\n        $\"_tmp\".getItem(15).as(\"Tone\"))\n    .withColumn(\"Tone\" , split($\"Tone\", \",\") ).withColumn(\"Tone\" , expr(\"Tone[0] \") )\n    \n    // Fonction permettant de nettoyer le champ \"Location\" dans les données gkg\n\ndef findCountry = udf((data: String) => {\n        data.split(\";\").toList.map(_.toString.split(\"#\")(1).split(\", \").last).mkString(\", \")\n    })\nval gkg_DF_preproc = gkg_DF_temp.withColumn(\"Test\", when(col(\"Location\").isNotNull, findCountry($\"Location\"))).drop(\"Location\").withColumnRenamed(\"Test\",\"Location\")\n\n",
+      "user": "anonymous",
+      "dateUpdated": "2021-01-22T10:42:09+0100",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9,
+        "title": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "export_RDD_translation: org.apache.spark.rdd.RDD[String] = MapPartitionsRDD[67] at flatMap at <console>:51\nexport_RDD_ENG: org.apache.spark.rdd.RDD[String] = MapPartitionsRDD[69] at flatMap at <console>:66\nmentions_RDD: org.apache.spark.rdd.RDD[String] = MapPartitionsRDD[71] at flatMap at <console>:80\ngkg_RDD: org.apache.spark.rdd.RDD[String] = MapPartitionsRDD[73] at flatMap at <console>:93\nexport_DF_translation: org.apache.spark.sql.DataFrame = [value: array<string>]\nexport_DF_ENG: org.apache.spark.sql.DataFrame = [value: array<string>]\nmentions_DF: org.apache.spark.sql.DataFrame = [value: array<string>]\ngkg_DF: org.apache.spark.sql.DataFrame = [value: array<string>]\nexport_DF_translation_preproc: org.apache.spark.sql.DataFrame = [globaleventid: string, days: string ... 3 more fields]..."
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1611307786830_27716684",
+      "id": "20210116-140357_1761751180",
+      "dateCreated": "2021-01-22T10:29:46+0100",
+      "status": "READY",
+      "$$hashKey": "object:3309"
+    },
+    {
+      "text": "    // Stage 4 : Ecriture des .parquet sur le bucket S3\nexport_DF_preproc.write.parquet(\"s3://gdelt-tests/cleaned_data/export.parquet\")",
+      "user": "anonymous",
+      "dateUpdated": "2021-01-22T10:36:57+0100",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": []
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1611307786830_2124221783",
+      "id": "20210120-170445_1287180968",
+      "dateCreated": "2021-01-22T10:29:46+0100",
+      "status": "READY",
+      "$$hashKey": "object:3310"
+    },
+    {
+      "text": "mentions_DF_preproc.write.parquet(\"s3://gdelt-tests/cleaned_data/mentions.parquet\")",
+      "user": "anonymous",
+      "dateUpdated": "2021-01-22T10:29:46+0100",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": []
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1611307786830_120122353",
+      "id": "20210120-171031_338040417",
+      "dateCreated": "2021-01-22T10:29:46+0100",
+      "status": "READY",
+      "$$hashKey": "object:3311"
+    },
+    {
+      "text": "gkg_DF_preproc.write.parquet(\"s3://gdelt-tests/cleaned_data/gkg.parquet\")",
+      "user": "anonymous",
+      "dateUpdated": "2021-01-22T10:42:15+0100",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": []
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1611307786830_670415110",
+      "id": "20210120-171033_310074708",
+      "dateCreated": "2021-01-22T10:29:46+0100",
+      "status": "READY",
+      "$$hashKey": "object:3312"
+    },
+    {
+      "text": "// Fonction permettant de nettoyer le champ \"Location\" dans les données gkg\n\ndef findCountry = udf((data: String) => {\n        data.split(\";\").toList.map(_.toString.split(\"#\")(1).split(\", \").last).mkString(\", \")\n    })\nval gkg_DF_preproc = gkg_DF_temp.withColumn(\"Test\", when(col(\"Location\").isNotNull, findCountry($\"Location\"))).drop(\"Location\").withColumnRenamed(\"Test\",\"Location\")",
+      "user": "anonymous",
+      "dateUpdated": "2021-01-22T10:41:52+0100",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1611308507785_1099211327",
+      "id": "paragraph_1611308507785_1099211327",
+      "dateCreated": "2021-01-22T10:41:47+0100",
+      "status": "READY",
+      "$$hashKey": "object:3313"
+    },
+    {
+      "text": "%md \n## Différents test sur nos DataFrames préprocéssés",
+      "user": "anonymous",
+      "dateUpdated": "2021-01-22T10:38:32+0100",
+      "progress": 0,
+      "config": {
+        "tableHide": false,
+        "editorSetting": {
+          "language": "markdown",
+          "editOnDblClick": true,
+          "completionKey": "TAB",
+          "completionSupport": false
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/markdown",
+        "fontSize": 9,
+        "editorHide": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "HTML",
+            "data": "<div class=\"markdown-body\">\n<h2>Différents test sur nos DataFrames préprocéssés</h2>\n\n</div>"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1611308224220_1337275776",
+      "id": "paragraph_1611308224220_1337275776",
+      "dateCreated": "2021-01-22T10:37:04+0100",
+      "dateStarted": "2021-01-22T10:38:32+0100",
+      "dateFinished": "2021-01-22T10:38:32+0100",
+      "status": "FINISHED",
+      "$$hashKey": "object:3314"
+    },
+    {
+      "text": "val export_DF_final = spark.read.parquet(\"s3://gdelt-tests/cleaned_data/export.parquet\")\nval mentions_DF_final = spark.read.parquet(\"s3://gdelt-tests/cleaned_data/mentions.parquet\")\nval gkg_DF_final = spark.read.parquet(\"s3://gdelt-tests/cleaned_data/gkg.parquet\")",
+      "user": "anonymous",
+      "dateUpdated": "2021-01-22T10:29:46+0100",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "export_DF_final: org.apache.spark.sql.DataFrame = [globaleventid: string, days: string ... 3 more fields]\nmentions_DF_final: org.apache.spark.sql.DataFrame = [globaleventid: string, mention: string]\ngkg_DF_final: org.apache.spark.sql.DataFrame = [Date: string, Theme: string ... 3 more fields]\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1611307786830_1637236631",
+      "id": "20210120-171501_748297332",
+      "dateCreated": "2021-01-22T10:29:46+0100",
+      "status": "READY",
+      "$$hashKey": "object:3315"
+    },
+    {
+      "text": "export_DF_final.show()",
+      "user": "anonymous",
+      "dateUpdated": "2021-01-22T10:29:46+0100",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "+-------------+--------+----------------+--------------------+--------+\n|globaleventid|    days|         country|                 url|language|\n+-------------+--------+----------------+--------------------+--------+\n|    957196722|20191202|          Canada|https://www.wella...|     ENG|\n|    957196748|20201101|  United Kingdom|https://www.itv.c...|     ENG|\n|    957196753|20201124|       Australia|https://www.heral...|     ENG|\n|    957196754|20201124|          Canada|https://www.wella...|     ENG|\n|    957196759|20201124|          Canada|https://www.wella...|     ENG|\n|    957196760|20201124|          Canada|https://www.thepe...|     ENG|\n|    957196761|20201124|   United States|https://wsau.com/...|     ENG|\n|    957196764|20201124|          Canada|https://www.wella...|     ENG|\n|    957196767|20201124|          Canada|https://www.wella...|     ENG|\n|    957196780|20201124|   United States|https://www.ydr.c...|     ENG|\n|    957196784|20201124|   United States|https://www.ydr.c...|     ENG|\n|    957196785|20201124|   United States|https://www.dulut...|     ENG|\n|    957196799|20201201|          France|https://www.voane...|     ENG|\n|    957196801|20201201|       Australia|https://www.heral...|     ENG|\n|    957196804|20201201|       Australia|https://www.heral...|     ENG|\n|    957196818|20201201|   United States|https://www.thefe...|     ENG|\n|    957196819|20201201|Marshall Islands|https://arktimes....|     ENG|\n|    957196826|20201201|          Canada|https://www.cjme....|     ENG|\n|    957196833|20201201|          Canada|https://www.wella...|     ENG|\n|    957196841|20201201|          Canada|https://www.wella...|     ENG|\n+-------------+--------+----------------+--------------------+--------+\nonly showing top 20 rows\n\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1611307786830_1402633923",
+      "id": "20210120-180618_980720011",
+      "dateCreated": "2021-01-22T10:29:46+0100",
+      "status": "READY",
+      "$$hashKey": "object:3316"
+    },
+    {
+      "text": "export_DF_final2.show(5)",
+      "user": "anonymous",
+      "dateUpdated": "2021-01-22T10:29:46+0100",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "+-------------+--------+---------------+--------------------+--------+\n|globaleventid|    days|        country|                 url|language|\n+-------------+--------+---------------+--------------------+--------+\n|    957196722|20191202|         Canada|https://www.wella...|     ENG|\n|    957196748|20201101| United Kingdom|https://www.itv.c...|     ENG|\n|    957196753|20201124|      Australia|https://www.heral...|     ENG|\n|    957196754|20201124|         Canada|https://www.wella...|     ENG|\n|    957196759|20201124|         Canada|https://www.wella...|     ENG|\n+-------------+--------+---------------+--------------------+--------+\nonly showing top 5 rows\n\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1611307786832_1029195879",
+      "id": "20210120-173108_889780673",
+      "dateCreated": "2021-01-22T10:29:46+0100",
+      "status": "READY",
+      "$$hashKey": "object:3317"
+    },
+    {
+      "text": "export_DF_final.groupBy(\"language\").count().sort(desc(\"count\")).show()",
+      "user": "anonymous",
+      "dateUpdated": "2021-01-22T10:29:46+0100",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "+--------+-----+\n|language|count|\n+--------+-----+\n|     ENG|13264|\n|      US|  254|\n|      IT|  168|\n|      GM|  155|\n|      BR|  144|\n|      SP|  141|\n|        |  137|\n|      ID|  137|\n|      FR|  116|\n|      MX|   98|\n|      UK|   93|\n|      CA|   93|\n|      RS|   92|\n|      UP|   54|\n|      CH|   53|\n|      PE|   51|\n|      RO|   48|\n|      AR|   41|\n|      BE|   38|\n|      CO|   36|\n+--------+-----+\nonly showing top 20 rows\n\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1611307786832_1505416878",
+      "id": "20210119-171634_1598559145",
+      "dateCreated": "2021-01-22T10:29:46+0100",
+      "status": "READY",
+      "$$hashKey": "object:3318"
+    }
+  ],
+  "name": "EMR_ETLs_vF",
+  "id": "2FWFHUAVF",
+  "defaultInterpreterGroup": "spark",
+  "version": "0.9.0",
+  "noteParams": {},
+  "noteForms": {},
+  "angularObjects": {},
+  "config": {
+    "isZeppelinNotebookCronEnable": false,
+    "looknfeel": "default",
+    "personalizedMode": "false"
+  },
+  "info": {},
+  "path": "/EMR_ETLs_vF"
+}

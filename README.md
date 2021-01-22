@@ -1,556 +1,212 @@
-## Configuration AWS
+<p align="center">
+  <img src="img/gdelt_global.png" width="700" />
+</p>
 
-### 0. Premiers pas avec AWS : bucket S3 et cluster EMR
-### 1. Créer un ETL Spark-Scala sur EMR
-### 2. Créer un cluster d'instances EC2 sur AWS
+<center>
+  <h1>Gdelt - NoSQL Big data implementation from scratch</h1>
+</center>
 
-Afin de requêter efficacement les données preprocessées par les ETL, nous allons les injecter dans une base de données non relationnelle. Nous allons créer celle-ci **from scratch**, sur la base d'un ensemble d'**instances EC2**.
+## Evolution de la pandémie COVID19 via son impact média
 
-Connectez vous à AWS et dirigez vous sur la page du service `EC2`, puis sélectionez le menu `Instances` et cliquez sur le bouton "Lancer des instances".
-### 3. Installer et configurer Apache Cassandra sur EC2
-### 4. Installer et configurer Zeppelin sur EC2
-### 5. Transférer des données de AWS S3 vers Apache Cassandra
-### 6. Requêter le ring Cassandra
+_Contributeurs : Vincent, Bardonnet, Alexandre Bréboin, Simon Delarue, Mathias Nourry, Valentin Pannier_
 
-### Configuration cluster EC2
+> _" The Global Database of Events, Language, and Tone (GDELT) monitors the world’s broadcast, print, and web news from nearly every corner of every country in over 100 languages and identifies the people, locations, organizations, themes, sources, emotions, counts, quotes, images and events driving our global society every second of every day, creating a free open platform for computing on the entire world_
 
-Dans AWS, cliquer sur EC2, puis "instances", puis sur le bouton "lancer des instances".
-Valider les choix dans les différentes étapes :
-1) choisir un système d'exploitation pour les instances (je sélectionne ubuntu 18 : nécessaire pour l'install de Cassandra)
-2) choisir la capacité des machines (t2.micro pour tester __edit__ il semble que zeppelin connecté à cassandra ne fonctionne que sur les machines Medium ...)
-3) choisir le nombre d'instances (je choisis 3 pour tester et je ne change aucun autre paramètre)
-4) choix du stockage : 8Go (par défaut)
-5) pas d'ajout de balises
-6) Ajouter l'ouverture des ports TCP 7000 et 9042 à la création du groupe de sécurité (depuis n'importe où) __primordial pour que les noeuds cassandra puisque communiquer__
+**Objectif**
 
-Cliquer sur le bouton de lancement du cluster.
+|L'objectif de ce projet est d'analyser l'évolution de la pandémie COVID, en fonction de la couverture médiatique associée. Pour cela, nous utilisons le jeu de données du **[projet Gdelt](https://blog.gdeltproject.org/gdelt-2-0-our-global-world-in-realtime/_)**.|
+| --- |
 
-Générer une nouvelle paire de clé pour le cluster, et la télécharger en cliquant sur le bouton dédié avant de passer à la suite en cliquant sur le bouton "Lancer les instances".
+### 1. Données
 
-Protéger la paire de clé d'éventuelles modifications en lançant la commande 
-``` shell
-chmod 400 \<name-of-key-pair\>.pem 
-```
-__Connexion aux instances__
-
-``` shell
-ssh -i \<chemin-vers-keyPair.pem\> ubuntu@\<DNS-address-of-master\>
-```
-
-### Install Apache Cassandra
-
-#### Install Java
-
-À noter : Java 8 est requis
-
-Update package index
-``` shell
-sudo apt update
-``` 
-Install openjdk package
-``` shell
-sudo apt install openjdk-8-jre-headless
-```
-Mettre à jour les variables d'environnement en ajoutant les lignes ci dessous dans le fichier `~/.bashrc`
-```
-export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-export JRE_HOME=$JAVA_HOME/jre
-export PATH=$PATH:$JAVA_HOME/bin:$JAVA_HOME/jre/bin
-```
-Puis lancer la commande suivante dans le terminal
-``` shell
-source ~/.bashrc
-```
-
-
-Vérifier la version de Java installée grâce à la commande ci-dessous.
-``` shell
-java -version
-```
-Le résultat devrait être
-```
-openjdk version "1.8.0_275"
-OpenJDK Runtime Environment (build 1.8.0_275-8u275-b01-0ubuntu1~18.04-b01)
-OpenJDK 64-Bit Server VM (build 25.275-b01, mixed mode)
-```
-#### Install Cassandra
-
-Télécharger la dernière version de Cassandra sur le site https://cassandra.apache.org/ et décompresser l'archive obtenue.
-``` shell
-wget https://mirrors.ircam.fr/pub/apache/cassandra/3.11.9/apache-cassandra-3.11.9-bin.tar.gz
-tar -xzf apache-cassandra-3.11.9-bin.tar.gz
-rm apache-cassandra-3.11.9-bin.tar.gz
-```
-
-Vérifier le bon fonctionnement de cassandra en lançant les commandes 
-``` shell
-./apache-cassandra-3.11.9/bin/cassandra
-```
-dans un autre terminal, sur la même instance EC2
-``` shell
-./apache-cassandra-3.11.9/bin/nodetool status
-```
-qui doit retourner quelque chose similaire à 
-```
-Datacenter: datacenter1
-=======================
-Status=Up/Down
-|/ State=Normal/Leaving/Joining/Moving
---  Address    Load       Tokens       Owns (effective)  Host ID                               Rack
-UN  127.0.0.1  70.7 KiB   256          100.0%            c180d502-ed1a-4b30-880d-84e7cbde8be3  rack1
-```
-
-À ce stade, cassandra est installé sur le noeud du cluster. Il est nécessaire de répéter les différentes étapes ci-dessus sur les autres noeuds du cluster.
-
-
-#### Config Cassandra
-
-
-172.31.95.67,172.31.83.243,172.31.86.222,172.31.83.28,172.31.83.237
-
-Il semble nécessaire de lancer un 1er noeud (avec la seed affectée à lui même), avant de lancer les autres noeuds (dont les seeds sont fixées à l'IP du 1er noeud).
-
-Nous allons modifier les fichiers :
-* `cassandra.yaml`
-* `cassandra-rackdc.properties`
-qui se situent dans le répertoire `/apache-cassandra-3.11.9/conf/`
-
-Modifier les fichiers avec la commande
-```
-sudo nano <nom_fichier>
-```
-
-##### cassandra.yaml
-__Seeds__
-
-Donner les adresses IP privées des instances du cluster.
-```
-seed_provider:
-    - class_name: org.apache.cassandra.locator.SimpleSeedProvider
-      parameters:
-          # seeds is actually a comma-delimited list of addresses.
-          # Ex: "<ip1>,<ip2>,<ip3>"
-          - seeds: "172.31.51.42,34.207.61.42,35.175.104.58"
-```
-
-__Listen address__
-
-Paramétrer la listen_address avec l'IP privée de l'instance.
-```
-listen_address: 172.31.51.42
-```
-
-__Snitch__
-
-Etant donné que nous travaillons sur AWS et plus précisemment, sur une unique zone (obligatoire pour les comptes AWS Educate), nous pouvons passer le paramètre suivant
-```
-endpoint_snitch: Ec2Snitch
-```
-
-__rpc__
-
-Changer l'adresse rpc avec l'IP privée de l'instance et le rpc_port (si besoin)
-```
-rpc_address: 172.31.51.42
-rpc_port: 9160
-```
-
-##### cassandra-rackdc.properties
-
-Commenter toutes les lignes du fichiers pour que les données de snitch considérées soient celles paramétrées dans le fichier précédent.
-
-&nbsp;
-Répéter les étapes précédentes pour chaque noeud du cluster.
-&nbsp;
-
-Sur le noeud dont l'IP est la seed passée dans les fichiers de config, exécuter le daemon cassandra
-``` shell
-./apache-cassandra-3.11.9/bin/cassandra
-```
-Ensuite, faire de même sur les autres noeuds du cluster
-
-Vérifier l'état du cluster, pour s'assurer que les noeuds communiquent bien entre eux.
-La commande 
-``` shell
-./apache-cassandra-3.11.9/bin/nodetool status
-```
-doit retourner quelque chose du style
-```
-Datacenter: us-east
-===================
-Status=Up/Down
-|/ State=Normal/Leaving/Joining/Moving
---  Address        Load       Tokens       Owns (effective)  Host ID                               Rack
-UN  172.31.63.156  70.68 KiB  256          68.4%             d124eab5-7a17-497d-8a24-e85b629b194d  1e
-UN  172.31.50.107  70.77 KiB  256          68.5%             8dd5ad48-0466-429b-bfc7-21b8d6234000  1e
-UN  172.31.61.170  70.72 KiB  256          63.1%             a43831e3-d90a-4952-865d-d728e6ed4d64  1e
-```
-
-Si besoin, checker la log de lancement de cassandra
-``` shell
-tail /var/log/cassandra/system.log
-```
-Killer un processus cassandra sur un noeud
-``` shell
-pkill -f 'java.*cassandra'
-```
-Après l'arrêt du processus cassandra, l'état du noeud en question doit apparaître `DN` lors de l'exécution de la commande `nodetool status`
-```
-Datacenter: us-east
-===================
-Status=Up/Down
-|/ State=Normal/Leaving/Joining/Moving
---  Address        Load       Tokens       Owns (effective)  Host ID                               Rack
-UN  172.31.71.95   12.48 MiB  256          100.0%            ae0cd4e5-7f86-4502-a527-e728c32af8bc  1f
-DN  172.31.75.249  12.46 MiB  256          100.0%            c97a67f3-3be5-491c-ad30-30cc7ae00776  1f
-DN  172.31.79.24   12.46 MiB  256          100.0%            05a936ee-e9e8-414a-b7c5-42a0d87d1475  1f
-```
-
-_Sources : 
-https://linuxize.com/post/how-to-install-apache-cassandra-on-ubuntu-18-04/_
-
-
-### Requêter sur le ring Cassandra
-
-Dans les étapes qui suivent, Zeppelin est installée sur l'une des instances contenant cassandra, et le cluster Cassandra contient 3 noeuds. Zeppelin utilise la version native de spark (disponible depuis les packages zeppelin), et pas un cluster spark déployé from scratch.
-
-_[Edit] : les configurations du notebook zeppelin peuvent être faite sur une version locale (plutôt que sur une instance EC2)._ 
-
-#### Zeppelin
-
-Pour effectuer des requêtes sur le ring cassandra, on va utiliser un notebook Zeppelin configuré avec un connecteur spark-cassandra.
-
-__Install__
-
-Pour installer Zeppelin, on télécharge les paquets depuis l'adresse suivante.
-
-``` shell
-wget https://downloads.apache.org/zeppelin/zeppelin-0.8.2/zeppelin-0.8.2-bin-all.tgz
-tar xzf zeppelin-0.8.2-bin-all.tgz
-rm zeppelin-0.8.2-bin-all.tgz
-```
-
-__Launch__
-Démarrer le daemon Zeppelin sur l'instance EC2
-``` shell
-cd zeppelin-0.8.2-bin-all/bin/
-./zeppelin-daemon.sh start
-```
-
-__Connect__
-Se connecter en ssh à l'instance EC2, en redirigeant le port utilisé par zeppelin pour y avoir accès localement (attention, le daemon zeppelin doit être démarré sur l'instance EC2). Le port par défaut de zeppelin est `8080`, nous allons le rediriger sur le port local `8891`.
-``` shell
-ssh -L 8891:127.0.0.1:8080 -i <keyPair.pem> ubuntu@ec2-18-232-186-153.compute-1.amazonaws.com
-```
-
-Dans le navigateur local, se connecter à l'adresser `localhost:8891`.
-
-
-#### Connect Zeppelin to Cassandra
-
-_**Note** : Dans le cas d'une connexion depuis un poste local sur le ring cassandra (stocké sur un cluster EC2), il faudra remplacer les IP privées des noeuds du cluster, par les IP **publiques**_.
-
-Pré-requis
-
-- Installer java 8
-
-Optionnel
-- Installer cassandra
-
-Il s'agit de modifier les configurations du `Interpreter menu` de Zeppelin (cliquer sur la roue de configuration en haut à droit de la page du notebook zeppelin) afin de faire le lien entre le cluster cassandra et le notebook utilisé.
-
-__Spark interpreter__
-
-Sélectionner l'interpréteur spark grâce à la barre de recherche du menu interpreter, et effectuer les modifications suivantes :
-1) Ajouter un pointeur vers la liste des adresses IP privées du cluster cassandra en créant une nouvelle ligne contenant
-  ```
-  spark.cassandra.connection.host           <IP cassandra>
-  ```
-2) Ajouter le connecteur Spark-Cassandra comme dépendance dans l'interpréteur. Les chemins peuvent être modifiés selon le système d'exploitation utilisé (voir ci-dessous pour le répertoire où copier les `.jar`). Dans tous les cas, inscrire le chemin **complet**.
-![dependances](dependances.png)
-
-Si les dépendances ne sont pas disponibles, télécharger les jar aux adresses
-
-* https://mvnrepository.com/artifact/com.datastax.spark/spark-cassandra-connector_2.11/2.0.12
-* https://mvnrepository.com/artifact/com.twitter/jsr166e/1.1.0
-
-ou directement par commande sur les machines du cluster (le répertoire `interpreter` est situé dans le dossier `zeppelin` téléchargé via fichiers binaires).
-
-``` shell
-cd ~/zeppelin-0.8.2-bin-all/interpreter/spark/dep
-wget https://repo1.maven.org/maven2/com/datastax/spark/spark-cassandra-connector_2.11/2.0.12/spark-cassandra-connector_2.11-2.0.12.jar
-wget https://repo1.maven.org/maven2/com/twitter/jsr166e/1.1.0/jsr166e-1.1.0.jar
-```
-_Note : cliquer sur le bouton "+" à droite des ajouts afin que l'interpréteur prenne bien les modifications en compte._
-
-__Cassandra interpreter__
-
-Sélectionner l'interpréteur cassandra grâce à la barre de recherche du menu interpreter et ajouter un pointeur vers la liste des adresses IP privées du cluster cassandra en créant la ligne
-  ```
-  cassandra.hosts           <IP cassandra>
-  ```
-
-### Data Analysis
-
-Maintenant que Zeppelin est connecté à Cassandra, il est possible de charger des données sur le cluster, et de les requêter pour répondre aux problématiques du projet GDELT
-
-Pour faciliter le traitement par l'utilisateur, on extrait la table stockée sur Cassandra au sein du Zeppelin notebook, et on transforme les données pour les lire via `spark.sql`
-
-__Exemple de requête__
-
-![Data analysis](data_analysis.png)
-
-__Etat du cluster Cassandra__
-
-Une fois les données chargées avec un `replication_factor` de 3, on peut vérifier l'état du keyspace créé sur le cluster Cassandra
-``` 
-ubuntu@ip-172-31-71-95:~/apache-cassandra-3.11.9/bin$ ./nodetool status gdelt_project
-Datacenter: us-east
-===================
-Status=Up/Down
-|/ State=Normal/Leaving/Joining/Moving
---  Address        Load       Tokens       Owns (effective)  Host ID                               Rack
-UN  172.31.71.95   12.48 MiB  256          100.0%            ae0cd4e5-7f86-4502-a527-e728c32af8bc  1f
-UN  172.31.75.249  12.46 MiB  256          100.0%            c97a67f3-3be5-491c-ad30-30cc7ae00776  1f
-UN  172.31.79.24   12.46 MiB  256          100.0%            05a936ee-e9e8-414a-b7c5-42a0d87d1475  1f
-```
-__Résilience__
-
-Après l'arrêt forcé d'un noeud, il est toujours possible de requêter depuis le Zeppelin notebook grâce à la réplication des données sur le ring Cassandra.
-
-
-
-
-
-## Access S3 from EC2
-
-Pour autoriser l'accès à un bucket S3 depuis un instance EC2, nous allons procéder aux étapes suivantes
-1. Configuer les rôles et stratégies des buckets et instances
-2. Configurer `aws cli`
-
-### 1. Rôles et stratégies des buckets et instances
+Le Gdelt Project vise à réunir les articles de presse du monde entier sous un même endroit. Au-delà d'un simple travail de récolte de données, ces dernières sont analysés pour produire des informations au sujet des thèmes, des sources, des lieux ou encore du ton de l'article.
+In fine, 3 sources de données sont mises à disposition :
+- export : données relatives à des publication
+- mentions : données relatives aux mentions de chaque publication 
+- gkg : données relatives aux lieux, acteurs et ton de chaque publication   
 
-**Créer un profil d'instance IAM qui autorise l'accès à S3**
+Ces 3 sources sont générées par intervalle de 15 minutes et sont indexées selon deux fichiers principaux :
+- [Masterfile : English](http://data.gdeltproject.org/gdeltv2/masterfilelist.txt) : relatif aux publications écrites en anglais
+- [Masterfile : Translation](http://data.gdeltproject.org/gdeltv2/masterfilelist-translation.txt) : relatif aux publications dans leur langue originale (hors anglais)
 
-Aller sur la page du service EC2 et sélectionner l'instance qui aura accès à S3, afin d'obtenir le rôle IAM lui étant associé ; ici : `EMR_EC2_DefaultRole`
+L'étude d'un an de données correspond à environ **500Go** à traiter. Les choix d'architecture pour l'analyse ont donc un impact majeur sur les performances finales du modèle !
 
-![](EC2_role.png)
 
-Sur la page du service IAM, cliquer sur l'onglet "Rôles" puis cliquer sur le rôle de l'instance EC2 souhaitée (voir ci-dessus). Dans le menu "autorisation", attacher une nouvelle stratégie permettant l'accès à S3 : `AmazonS3FullAccess`
+### 2. Architecture
 
-![](IAM_role.png)
+Pour répondre aux besoins de l'analyse, nous avons mis en place une architecture déployée sur **Amazon Web Services** (AWS), au travers de technologies distribuées comme **Spark** et d'une base de données NoSQL, **Cassandra**.
 
-**Valider les autorisations sur le bucket S3**
+<p align="center">
+  <img src="img/modele.png" width="700" />
+</p>
 
-Sur la page du service S3, sélectionner le bucket à connecter à l'instance EC2, puis dans le menu "Autorisations", **désactiver** le blocage de l'accès public
+***Choix de la techologie de base de données***
 
-![](S3_role.png)
+Le choix de la technologie de base de données s'est fait à partir du triangle CAP :
+- ***C***onstistency
+- ***A***vailability
+- ***P***artition tolerance
 
-Si besoin, retirer les instructions `Effect:Deny` de la stratégie de compartiment
+<p align="center">
+  <img src="img/CAP.png" width="500" />
+</p>
 
-Les éléments AWS sont configurés, a présent, connectons nous à l'instance EC2 afin de télécharger les données depuis S3.
+Le theorème CAP suggère qu'il faille faire un choix entre les trois caractéristiques de notre base.
+Dans notre cas d'étude, nous avons décidé de ne pas sélectionner la caractéristique ***C***onsistency qui assure normalement de toujours obtenir des données à jour au moment d'une lecture de la base. En effet, les données stockées correspondront à l'année 2020 et représentent donc une image des données du Gdelt pour cette année. Les données stockées ne sont donc pas amenées à être modifiées.   
+Au final on souhaite donc une technologie permettant : 
+- une fault tolerance (accessibilité aux données malgré le fait que certains noeuds tombent) = ***P***artition tolerance 
+- que le temps de requêtage soit relativement faible = ***A***vaibility
 
-### 2. Configurer `aws cli`
 
-Données du projet GDELT :
+***DataLake : bucket S3 et ETLs via EMR***
 
-- groupe de sécurité : **sg-0384c4f143d0535dd (launch-wizard-3-09012021)**
-- bucket S3 utilisé pour le projet (configuré via lien ci-dessus): **simondelarue-s3-09012021**
-- rôle IAM associé au master du cluster EC2 : **EMR_EC2_DefaultRole** (configuré avec la règle d'accès S3FullAccess)
-- keyPair associée au cluster EC2 : **keyPair-09012021.pem**
+<p align="center">
+  <img src="img/EMR.png" width="250" />
+</p>
 
-**Définir les credentials du user**
+Se plaçant dans une configuration professionnelle, notre solution repose sur une distinction claire entre un DataLake accessible par des professionnels de la donnée, et un DataWarehouse disponible pour les applications métiers.
 
-Les étapes ci-dessous sont à effectuer depuis le terminal de l'instance EC2 à connecter au bucket S3.
+Le DataLake est représenté ici par un ensemble de compartiment S3 permettant de stocker :
+- des fichiers de données brutes, directement extraites de la plateforme Gdelt
+- des fichiers de données pré-traitées, issues d'un traitement des données brutes
 
-Modifier les credentials de la session dans les configurations de `aws cli`.
+La génération de ces deux formats de fichiers est effectuée sur la base de 2 ETLs exécutés sur des clusters EMR à partir de la technologie Spark.
+Dans un soucis de coûts limités par nos comptes AWS Educate, nous avons fait le choix de disposer de 3 compartiments S3, chacun assurant la sauvegarde des données sur un horizon de 4 mois. Chaque bucket S3 peut ainsi être chargé en données brutes par un EMR qui lui est propre : on dispose ainsi de 3 EMR et de 3 compartiments S3. Chaque EMR a pour mission, sur son périmètre de 4 mois de données :
+- de charger les données brutes au format *.zip* depuis la plateforme Gdelt vers le compartiment S3 qui lui est associé dans un dossier *Raw_data* (ETL 1)
+- de pré-traiter ces données, afin de filtrer les données relatives au COVID-19 et de sélectionner les colonnes importantes, et de les charger dans un dossier *Processed_data* dans le compartiment S3 qui lui est associé au format *.parquet* (ETL 2)   
 
-a. Récupérer les credentials de la session
-Retourner à la page de connexion "Vocareum" et cliquer sur `account details`
-![](vocareum.png)
-Puis copier **la totalité du contenu des credentials** (y compris "[default]" et le dernier "=")
-![](credentials.png)
-b. Ouvrir le fichier de configuration de `aws cli` avec la commande ci-dessous, et y coller les éléments récupérés à l'étape précédente
-``` shell
-sudo nano ~/.aws/credentials
-```
-Si le fichier `credentials` n'existe pas (nouvelle instance EC2 par exemple), il est nécessaire dans un premier temps d'installer `aws cli` avec la commande
-``` shell
-sudo apt-get install awscli
-```
-
-
-Ca y est ! `aws cli` est configuré. Nous pouvons à présent interagir depuis l'instance EC2 avec S3.
-
-**Download fichiers depuis S3**
-
-Download les fichiers depuis AWS S3 en lançant la commande
-``` shell
-aws s3 cp s3://<S3_bucket_name>/<S3_filename> <local_filename>
-```
-_Note : Cette commande peut être lancée depuis un zeppelin notebook, dans l'interpréteur shell, avec le mot clé `%sh` en début de cellule_
-![](shell_cmd.png)
-
-Pour download/upload tout le contenu d'un répertoire depuis/vers S3, utiliser l'option `--recursive` dans la commande `aws s3 cp`.
-
-_Source : 
-https://aws.amazon.com/fr/premiumsupport/knowledge-center/ec2-instance-access-s3-bucket/_
-&nbsp;
-&nbsp;
-&nbsp;
+Chaque EMR est constitué de 7 machines m4.xlarge permettant une exécution rapide des ETLs. Une fois les ETL 1 et 2 effectués, les EMR sont résiliés.  
 
--- Ci-dessous : EN COURS
+***DataWarehouse : EC2 - Cassandra***
 
+<p align="center">
+  <img src="img/EC2.png" width="250" />
+</p>
 
-### Spark
+Le DataWarehouse consitute le lieux de stockage des données pré-traitées propre à l'application d'une business unit. Ces données sont directement destinées aux métiers et peuvent être analysées immédiatement. Dans notre cas cette business unit correspond à la recherche sur le COVID-19. Toutefois notre architecture permettrait d'instancier d'autres DataWarehouse destinés à d'autres business unit (juridique, marketing ...) en répliquant la partie EC2 - Cassandra.
 
-Download 2.4.7 version (comptabile avec zeppelin 0.8.2)
-``` shell
-wget https://apache.mirrors.benatherton.com/spark/spark-2.4.7/spark-2.4.7-bin-hadoop2.7.tgz
-tar -xzf spark-2.4.7-bin-hadoop2.7.tgz
-rm spark-2.4.7-bin-hadoop2.7.tgz
-```
-
-Modifier les variables d'environnement en ajoutant la ligne suivante dans le fichier `~/.bashrc` 
-```
-export SPARK_HOME=/home/ubuntu/spark-2.4.7-bin-hadoop2.7
-```
-Puis dans le terminal, lancer la commande
-``` shell
-source ~/.bashrc
-```
-
+Les configurations retenues pour l'instanciation de notre ring Cassandra sont les suivantes :
 
-### Master node config
+*Note* : Pour configurer cette architecture chez vous, suivez ce [Tutoriel Cassandra](https://github.com/MathiasNourry/Gdelt_project/tree/main/cassandra)
 
-Copier les 2 fichiers de configuration situés dans `/spark-2.4.7-bin-hadoop2.7/conf/` 
-``` shell
-cd /home/ubuntu/spark-2.4.7-bin-hadoop2.7/conf
-cp spark-env.sh.template spark-env.sh 
-cp spark-defaults.conf.template spark-defaults.conf 
-```
+**Configurations**
+* **EC2 instances** : M4Large 
+* **Replication factor** = 3
+* **Snitch** : Ec2Snitch   
+Ce paramètre est optimal pour une utilisation du cluster au sein d'une même région (ce qui est une contrainte imposée par l'utilisation d'un compte AWS Educate).
+* **Read/Write consistency** = ONE/LOCAL_QUORUM   
+Ces choix nous permettent en effet d'offrir à l'utilisateur la possibilité de requêter les données si certains noeuds sont _down_, tout en assurant une consistance raisonnable au moment du chargement des données.
+* **Load** ~1Go de données par noeud
 
-A présent, modifier les deux fichiers :
-* `spark-env.sh`
-* `spark-default.conf`
+<p align="center">
+  <img src="img/nodetool_status.png" width="700" />
+</p>
 
+Les données **export** et **mentions** pour une année entière sont injectées dans 2 tables distinctes, permettant à l'utilisateur un requêtage simple et efficace.
+Faute d'espace de stockage, les données **gkg** n'ont pas été chargées sur le ring Casssandra.
 
-__spark-env.sh__
 
-Ajouter les lignes suivantes dans le fichier `spark-env.sh`
-```
-export SPARK_LOCAL_IP=<PRIVATE_DNS_this_NODE>
-export SPARK_MASTER_HOST=<PRIVATE_DNS_this_NODE>
-```
+### 3. Zeppelin - Analyse des données
 
-__spark-default.conf__
+Les données sont à présent sur le ring Cassandra, et l'utilisateur peut y accéder en utilisant un **Notebook Zeppelin**, configuré spécifiquement pour dialoguer avec Cassandra (via l'installation d'un connecteur spark-cassandra).
 
-Ajouter les lignes suivantes dans le fichier `spark-default.conf`
+Il existe deux façons distinctes d'obtenir les données :
+- via `CQL` le langage de requête natif de Cassandra. Ce langage impose cependant des contraintes fortes sur la manipulation des données (notamment sur les agrégations et jointures)
+- via `Spark-SQL`, en important les tables depuis Cassandra et en les injectant dans des _vues_ destinées à faciliter l'analyse. C'est cette méthode que nous retenons (exemple ci-dessous)
+``` scala
+val mentions_from_cass = spark.read.cassandraFormat("mentions", "gdelt_project").load()
+mentions_from_cass.createOrReplaceTempView("mentions")
 ```
-spark.master                        spark://PRIVATE_DNS_MASTER1:7077,PRIVATE_DNS_MASTER2:7077
-spark.jars.packages                 datastax:spark-cassandra-connector:2.0.0-s_2.11
-spark.cassandra.connection.host     <PRIVATE_DNS_Slaves> (separated by ',')
-```
-
-### Worker node config
 
-Copier les 2 fichiers de configuration situés dans `/spark-2.4.7-bin-hadoop2.7/conf/` 
-``` shell
-cd /home/ubuntu/spark-2.4.7-bin-hadoop2.7/conf
-cp spark-env.sh.template spark-env.sh 
-cp spark-defaults.conf.template spark-defaults.conf 
-```
+<p align="center">
+  <img src="img/export_table.png" width="500" />
+</p>
 
-Les deux fichiers suivants sont à modifier :
-* `spark-env.sh`
-* `spark-default.conf`
+**Nombre d'événements médiatiques relatifs au COVID, par date et pays**
 
-__spark-env.sh__
+Il peut être intéressant d'observer l'évolution du nombre d'articles relatifs au COVID sur l'année 2020, en détaillant par pays d'origine de l'article.  
+On note qu'avant le mois de mars, la couverture médiatique était relativement basse, et principalement concentrée sur la Chine. Après le début de la "première vague", tous les pays - et majortairement les US - ont participé à la production d'articles.
 
-Ajouter les lignes suivantes dans le fichier `spark-env.sh`
-```
-export SPARK_LOCAL_IP=<PRIVATE_DNS_this_NODE>
-export SPARK_MASTER_HOST=<PRIVATE_DNS_MASTER1,PRIVATE_DNS_MASTER1>
+``` sql
+select country
+    ,days
+    ,count(globaleventid) as nb_event 
+from export
+where country <> "null"
+group by
+    country
+    ,days
+order by nb_event desc
 ```
 
-__spark-default.conf__
+<p align="center">
+  <img src="img/COVID_events.png" width="1000" />
+</p>
 
-Ajouter les lignes suivantes dans le fichier `spark-default.conf`
-```
-spark.master                        spark://PRIVATE_DNS_MASTER1:7077,PRIVATE_DNS_MASTER2:7077
-spark.jars.packages                 datastax:spark-cassandra-connector:2.4.0-s_2.11
-spark.cassandra.connection.host     <PRIVATE_DNS_Slaves> (separated by ',')
-```
+**Nombre d'événements médiatiques relatifs au COVID, par pays et par langue**
 
-__Spark-Cassandra connectors__
+En observant le nombre d'articles relatifs au COVID par pays et par langue, on peut noter les différences de proportion dans les langues utilisées pour la production d'articles ; ci-dessous des exemples pour la France et l'Inde.
 
-Version du connecteur compatible avec Spark 2.4 et Cassandra 3.x
-``` shell
-wget https://dl.bintray.com/spark-packages/maven/datastax/spark-cassandra-connector/2.4.0-s_2.11/spark-cassandra-connector-2.4.0-s_2.11.jar
-wget https://repo1.maven.org/maven2/com/twitter/jsr166e/1.1.0/jsr166e-1.1.0.jar
+``` sql
+select country
+    ,days
+    ,language
+    ,count(globaleventid) as nb_event 
+from export
+where country="${Country=France,Belgium|France|Canada|China|Germany|Italy|India|Mexico|Spain|United States|United Kingdom}"
+    and days <= 20200531
+    and days >= 20200430
+group by
+    country
+    ,days
+    ,language
+order by nb_event desc
 ```
-
-
-
-## Access cassandra from EMR
+<p align="center">
+  <img src="img/COVID_events_France.png" width="1000" />
+</p>
 
-**Old method**
-source : http://www.doanduyhai.com/blog/?p=2325
+<p align="center">
+  <img src="img/COVID_events_India.png" width="1000" />
+</p>
 
-install git
-``` shell
-sudo yum install git-core
-```
-download spark-cassandra connector repo
-``` shell
-git clone https://github.com/datastax/spark-cassandra-connector/
-```
-install sbt (to create jar file from spark-cassandra connector repo)
-source : https://www.scala-sbt.org/1.x/docs/Installing-sbt-on-Linux.html
-``` shell
-curl https://bintray.com/sbt/rpm/rpm | sudo tee /etc/yum.repos.d/bintray-sbt-rpm.repo
-sudo yum install sbt
-```
-create jar file from spark-cassandra connector repo. 
-_Executer la commande à l'endroit où a été téléchargé le repo spark-cassandra connector_
-``` shell
-sbt assembly
-```
+**Nombre de mentions des évenements, par pays**
 
-Modifier le fichier conf de spark dans EMR
-``` shell
-cd /etc/spark/conf
-sudo nano spark-env.sh
-```
-ajouter la ligne
-```
-export SPARK_SUBMIT_OPTIONS=' --packages com.datastax.spark:spark-cassandra-connector_2.11:2.0.12'
-```
+Finalement, au delà du nombre d'articles relatifs au COVID publiés dans une région, nous pouvons regarder les événements qui ont suscité le plus de mentions dans d'autres sources d'information.
 
-Modifier le fichier conf de zeppelin dans EMR
-``` shell
-cd /etc/zeppelin/conf
-sudo nano zeppelin-env.sh
+``` sql
+select export.url, count(mentions.mention) as nb_mentions
+from export as export
+left join mentions as mentions
+    on export.url = mentions.mention
+where export.country = "${Country=United States,Belgium|France|Canada|China|Germany|Italy|India|Mexico|Spain|United States|United Kingdom}"
+    and days = "20201208"
+group by export.url
+order by nb_mentions desc
+limit 15
 ```
-ajouter/compléter la ligne avec les packages de connecteur spark-cassandra
-```
-export SPARK_SUBMIT_OPTIONS=' --packages com.datastax.spark:spark-cassandra-connector_2.11:2.0.12'
-```
 
-**New method**
+<p align="center">
+  <img src="img/COVID_mentions.png" width="1000" />
+</p>
 
-Modifier les dépendances zeppelin dans EMR en y ajoutant les fichiers `.jar` de dépandances
-``` shell
-cd /usr/lib/zeppelin/interpreter/spark/dep
-sudo wget https://repo1.maven.org/maven2/com/twitter/jsr166e/1.1.0/jsr166e-1.1.0.jar
-sudo wget https://repo1.maven.org/maven2/com/datastax/spark/spark-cassandra-connector_2.11/2.0.12/spark-cassandra-connector_2.11-2.0.12.jar
-```
+### 4. Limites et contraintes du modèle
 
-Ajouter les connecteurs Spark-Cassandra comme dépendance dans l'interpréteur
-![dependances](dependances.png)
+Le modèle présenté soulève quelques limites et contraintes
 
+**Cassandra**
 
+Bien que permettant de respecter nos objectifs de disponibilité et de tolérance aux pannes, Cassandra impose une rigidité dans les structures des tables et des requêtes (jointures, et agrégations moins souples qu'en SQL). Pour faciliter la tâche de l'utilisateur, nous avons fait le choix de créer des vues spark-sql sur la base des données requêtées dans Cassandra.
 
+**Gdelt**
 
+L'analyse des données est à prendre dans son ensemble, sans faire de focus précis sur les éléments, en effet :
+- le filtre que nous appliquons sur l'url ne tient pas compte des articles référencés par un numéro &rarr; sous-estimation du nombre d'événements liés au COVID
+- nous ne traitons pas les données de pays manquantes &rarr; sous-estimation du nombre d'événements pour certaines régions
 
+**Compte AWS Educate**
 
+Finalement, une des contraintes les plus forte à été liée au compte AWS lui-même :
+- la limite de ressources machines disponible (32 CPUs) a augmenté les temps de traitements et les capacités de stockage
+- l'impossibilité de partager les ressources budgétaires (100$ par personne) nous a contraint a paralléliser les downloads et ETL dans le groupe, afin de mener à bien le projet (dont le coût a dépassé 100$)
+- le manque d'espace de stockage dans les choix de notre architecture ne nous a pas permit d'intégrer les données gkg dans le ring Cassandra
