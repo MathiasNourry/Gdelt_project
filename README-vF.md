@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/gdelt_global.png" width="700" />
+  <img src="img/gdelt_global.png" width="700" />
 </p>
 
 <center>
@@ -40,6 +40,8 @@ Pour répondre aux besoins de l'analyse, nous avons mis en place une architectur
   <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/modele.png" width="700" />
 </p>
 
+***Choix de la techologie de base de données***
+
 Le choix de la technologie de base de données sélectionné s'est fait sur la base du triangle CAP :
 - ***C***onstistency
 - ***A***vailability
@@ -56,13 +58,20 @@ Au final on souhaite donc une technologie permettant :
 - que le temps de requêtage soit relativement faible = ***A***vaibility
 
 
-#### EMR - ETLs
+***DataLake : bucket S3 et ETLs***
 
-Un cluster de 7 machines m4.xlarge à été mis en place, chaque machine m4.xlarge possède 4 CPUs, ce qui totalise 28 CPUs. Notre compte AWS educate permettant d'utiliser un maximum de 32 CPUs en simultané. 
-A partir de notre cluster EMR, nous avons lancé un notebook Zeppelin. Sur ce Zeppelin, nous avons devellopé L'ETL 1 qui permet de télécharger les données brutes Gdelt (masterfile & masterfile-translation) sous formes de .zip dans le dossier raw-data sur un bucket S3. 
-Dans un second temps, nous avons devellopé le second ETL qui permet de récupérer les données brutes et de les transformer en DataFrame permettant de répondre aux problématique du projet. Ces données sont sauvegardées en .parquet dans le dossier cleaned-data sur le bucket S3
+Se plaçant dans une configuration professionnelle, notre solution repose sur une distinction claire entre un data lake accessible par des professionnels de la donnée, et un data warehouse disponible pour les applications métiers.
 
-La charge de téléchargement à été répartie entre 3 personnes, qui ont lancé chacune un cluster de machine, executés les 2 ETLs sur 4 mois de données Gdelt.
+Le data lake est représenté ici par un ensemble de compartiment S3 permettant de stocker :
+- des fichiers de données brutes, directement extraites de la plateforme Gdelt
+- des fichiers de données pré-traitées, issues d'un traitement des données brutes
+
+La génération de ces deux formats de fichiers est effectuée sur la base de 2 ETLs exécutés sur des clusters EMR à partir de la technologie Spark.
+Dans un soucis de coûts limités par nos comptes AWS Educate, nous avons fait le choix de disposer de 3 compartiments S3, chacun assurant la sauvegarde des données sur un horizon de 4 mois. Chaque bucket S3 peut ainsi être chargé en données brutes par un EMR qui lui est propre : on dispose ainsi de 3 EMR et de 3 compartiments S3. Chaque EMR est ainsi chargé, sur son périmètre de 4 mois de données :
+- de charger les données brutes au format *.zip* depuis la plateforme Gdelt vers le compartiment S3 qui lui est associé dans un dossier *Raw_data*(ETL 1)
+- de pré-traiter ces données, afin de filtrer les données relatives au COVID-19 et de sélectionner les colonnes importantes, et de les charger dans un dossier *Processed_data* dans le compartiment S3 qui lui est associé au format *.parquet* (ETL 2)   
+
+Chaque EMR est constitué de 7 machines m4.xlarge permettant une exécution rapide des ETLs. Une fois les ETL 1 et 2 effectué, les EMR sont résiliés.  
 
 #### EC2 - Cassandra
 
