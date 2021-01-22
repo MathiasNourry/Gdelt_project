@@ -40,15 +40,21 @@ Pour répondre aux besoins de l'analyse, nous avons mis en place une architectur
   <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/modele.png" width="700" />
 </p>
 
-Ces choix résultent directement de l'analyse de la problématique ; en effet, nous souhaitons pour ce projet :
-- offrir à l'utilisateur une forte disponibilité
-- permettre l'accès aux données malgré les potentielles pannes sur le système
-
-Le stockage sur Cassandra permet de répondre à ces deux contraintes
+Le choix de la technologie de base de données sélectionné s'est fait sur la base du triangle CAP :
+- ***C***onstistency
+- ***A***vailability
+- ***P***artition tolerance
 
 <p align="center">
   <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/CAP.png" width="500" />
 </p>
+
+Le theorème CAP suggère qu'il faille faire un choix entre les trois caractéristiques de notre base.
+Dans notre cas d'étude, nous avons décidé de ne pas sélectionner la caractéristique ***C***onsistency qui assure normalement de toujours obtenir des données à jour au moment d'une lecture de la base. En effet, les données stockées correspondront à l'année 2020 et représentent donc une image des données du Gdelt pour cette année. Les données stockées ne sont donc pas amenées à être modifiées.   
+Au final on souhaite donc une technologie permettant : 
+- une fault tolerance (accessibilité aux données malgré que certains noeuds tombent) = ***P***artition tolerance 
+- que le temps de requêtage soit relativement faible = ***A***vaibility
+
 
 #### EMR - ETLs
 
