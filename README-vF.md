@@ -19,9 +19,14 @@ _Contributeurs : Vincent, Bardonnet, Alexandre Bréboin, Simon Delarue, Mathias 
 
 ### 1. Données
 
-Les données disponibles sont indexées par 2 fichiers :
-* [Masterfile : English](http://data.gdeltproject.org/gdeltv2/masterfilelist.txt)
-* [Masterfile : Translation](http://data.gdeltproject.org/gdeltv2/masterfilelist-translation.txt)
+Le Gdelt Project vise à réunir les articles de presse du monde entier sous un même endroit. Au-delà d'un simple travail de récolte de données, ces dernières sont analysés pour produire des informations au sujet des thèmes, des sources, des lieux ou encore du ton de l'article.
+In fine, 3 sources de données sont mises à disposition :
+- export : données relatives à une publication
+- mentions : données relatives aux mentions de chaque publication 
+- gkg : données relatives aux lieux, acteurs et ton de chaque publication
+Ces 3 sources sont générées par intervalle de 15 minutes et sont indexées selon deux fichiers principaux :
+- [Masterfile : English](http://data.gdeltproject.org/gdeltv2/masterfilelist.txt) : relatif aux publications écrites en anglais
+- [Masterfile : Translation](http://data.gdeltproject.org/gdeltv2/masterfilelist-translation.txt) : relatif aux publications dans leur langue originale (hors anglais)
 
 L'étude d'un an de données correspond à environ **500Go** à traiter. Les choix d'architecture pour l'analyse ont donc un impact majeur sur les performances finales du modèle !
 
