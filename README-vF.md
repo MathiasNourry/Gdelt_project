@@ -1,4 +1,6 @@
-![Gdelt](img/gdelt_global.png)
+<p align="center">
+  <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/gdelt_global.png" width="700" />
+</p>
 
 #<center>Gdelt - NoSQL Big data implementation from scratch</center>
 
@@ -26,7 +28,9 @@ L'étude d'un an de données correspond à environ **500Go** à traiter. Les cho
 
 Pour répondre aux besoins de l'analyse, nous avons mis en place une architecture basée déployée sur **Amazon Web Services** (AWS), au travers de technologies distribuées comme **Spark** et d'une base de données NoSQL, **Cassandra**.
 
-![model](img/modele.png)
+<p align="center">
+  <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/modele.png" width="700" />
+</p>
 
 Ces choix résultent directement de l'analyse de la problématique ; en effet, nous souhaitons pour ce projet :
 - offrir à l'utilisateur une forte disponibilité
@@ -34,7 +38,9 @@ Ces choix résultent directement de l'analyse de la problématique ; en effet, n
 
 Le stockage sur Cassandra permet de répondre à ces deux contraintes
 
-![CAP](img/CAP.png)
+<p align="center">
+  <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/CAP.png" width="500" />
+</p>
 
 #### EMR - ETLs
 
@@ -59,7 +65,9 @@ Ce paramètre est optimal pour une utilisation du cluster au sein d'une même r�
 Ces choix nous permettent en effet d'offrir à l'utilisateur la possibilité de requêter les données si certains noeuds sont _down_, tout en assurant une consistance raisonnable au moment du chargement des données.
 * **Load** ~1Go de données par noeud
 
-![Nodetool status](img/nodetool_status.png)
+<p align="center">
+  <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/nodetool_status.png" width="700" />
+</p>
 
 Les données **export** et **mentions** pour une année entière sont injectées dans 2 tables distinctes, permettant à l'utilisateur un requêtage simple et efficace.
 
@@ -75,8 +83,9 @@ val mentions_from_cass = spark.read.cassandraFormat("mentions", "gdelt_project")
 mentions_from_cass.createOrReplaceTempView("mentions")
 ```
 
-![Export_table](img/export_table.png)
-
+<p align="center">
+  <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/export_table.png" width="500" />
+</p>
 
 **Nombre d'événements médiatiques relatifs au COVID, par date et pays**
 
@@ -95,7 +104,9 @@ group by
 order by nb_event desc
 ```
 
-![Events](img/COVID_events.png)
+<p align="center">
+  <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/COVID_events.png" width="1000" />
+</p>
 
 **Nombre d'événements médiatiques relatifs au COVID, par pays et par langue**
 
@@ -116,8 +127,13 @@ group by
     ,language
 order by nb_event desc
 ```
-![Events in France](img/COVID_events_France.png)
-![Events in India](img/COVID_events_India.png)
+<p align="center">
+  <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/COVID_events_France.png" width="1000" />
+</p>
+
+<p align="center">
+  <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/COVID_events_India.png" width="1000" />
+</p>
 
 **Nombre de mentions des évenements, par pays**
 
@@ -135,7 +151,9 @@ order by nb_mentions desc
 limit 15
 ```
 
-![Mentions](img/COVID_mentions.png)
+<p align="center">
+  <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/COVID_mentions.png" width="1000" />
+</p>
 
 ### 4. Limites et contraintes du modèle
 
