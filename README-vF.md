@@ -14,8 +14,8 @@ _Contributeurs : Vincent, Bardonnet, Alexandre Bréboin, Simon Delarue, Mathias 
 
 **Objectif**
 
-L'objectif de ce projet est d'analyser l'évolution de la pandémie COVID, en fonction de la couverture médiatique associée.
-Pour cela, nous utilisons le jeu de données du **[projet Gdelt](https://blog.gdeltproject.org/gdelt-2-0-our-global-world-in-realtime/_)**.
+|L'objectif de ce projet est d'analyser l'évolution de la pandémie COVID, en fonction de la couverture médiatique associée. Pour cela, nous utilisons le jeu de données du **[projet Gdelt](https://blog.gdeltproject.org/gdelt-2-0-our-global-world-in-realtime/_)**.|
+| --- |
 
 ### 1. Données
 
