@@ -21,7 +21,7 @@ _Contributeurs : Vincent, Bardonnet, Alexandre Bréboin, Simon Delarue, Mathias 
 
 Le Gdelt Project vise à réunir les articles de presse du monde entier sous un même endroit. Au-delà d'un simple travail de récolte de données, ces dernières sont analysés pour produire des informations au sujet des thèmes, des sources, des lieux ou encore du ton de l'article.
 In fine, 3 sources de données sont mises à disposition :
-- export : données relatives à une publication
+- export : données relatives à des publication
 - mentions : données relatives aux mentions de chaque publication 
 - gkg : données relatives aux lieux, acteurs et ton de chaque publication   
 
@@ -34,7 +34,7 @@ L'étude d'un an de données correspond à environ **500Go** à traiter. Les cho
 
 ### 2. Architecture
 
-Pour répondre aux besoins de l'analyse, nous avons mis en place une architecture basée déployée sur **Amazon Web Services** (AWS), au travers de technologies distribuées comme **Spark** et d'une base de données NoSQL, **Cassandra**.
+Pour répondre aux besoins de l'analyse, nous avons mis en place une architecture déployée sur **Amazon Web Services** (AWS), au travers de technologies distribuées comme **Spark** et d'une base de données NoSQL, **Cassandra**.
 
 <p align="center">
   <img src="img/modele.png" width="700" />
@@ -42,7 +42,7 @@ Pour répondre aux besoins de l'analyse, nous avons mis en place une architectur
 
 ***Choix de la techologie de base de données***
 
-Le choix de la technologie de base de données sélectionné s'est fait sur la base du triangle CAP :
+Le choix de la technologie de base de données s'est fait à partir du triangle CAP :
 - ***C***onstistency
 - ***A***vailability
 - ***P***artition tolerance
@@ -54,7 +54,7 @@ Le choix de la technologie de base de données sélectionné s'est fait sur la b
 Le theorème CAP suggère qu'il faille faire un choix entre les trois caractéristiques de notre base.
 Dans notre cas d'étude, nous avons décidé de ne pas sélectionner la caractéristique ***C***onsistency qui assure normalement de toujours obtenir des données à jour au moment d'une lecture de la base. En effet, les données stockées correspondront à l'année 2020 et représentent donc une image des données du Gdelt pour cette année. Les données stockées ne sont donc pas amenées à être modifiées.   
 Au final on souhaite donc une technologie permettant : 
-- une fault tolerance (accessibilité aux données malgré que certains noeuds tombent) = ***P***artition tolerance 
+- une fault tolerance (accessibilité aux données malgré le fait que certains noeuds tombent) = ***P***artition tolerance 
 - que le temps de requêtage soit relativement faible = ***A***vaibility
 
 
@@ -64,9 +64,9 @@ Au final on souhaite donc une technologie permettant :
   <img src="img/EMR.png" width="250" />
 </p>
 
-Se plaçant dans une configuration professionnelle, notre solution repose sur une distinction claire entre un data lake accessible par des professionnels de la donnée, et un data warehouse disponible pour les applications métiers.
+Se plaçant dans une configuration professionnelle, notre solution repose sur une distinction claire entre un DataLake accessible par des professionnels de la donnée, et un DataWarehouse disponible pour les applications métiers.
 
-Le data lake est représenté ici par un ensemble de compartiment S3 permettant de stocker :
+Le DataLake est représenté ici par un ensemble de compartiment S3 permettant de stocker :
 - des fichiers de données brutes, directement extraites de la plateforme Gdelt
 - des fichiers de données pré-traitées, issues d'un traitement des données brutes
 
@@ -75,7 +75,7 @@ Dans un soucis de coûts limités par nos comptes AWS Educate, nous avons fait l
 - de charger les données brutes au format *.zip* depuis la plateforme Gdelt vers le compartiment S3 qui lui est associé dans un dossier *Raw_data* (ETL 1)
 - de pré-traiter ces données, afin de filtrer les données relatives au COVID-19 et de sélectionner les colonnes importantes, et de les charger dans un dossier *Processed_data* dans le compartiment S3 qui lui est associé au format *.parquet* (ETL 2)   
 
-Chaque EMR est constitué de 7 machines m4.xlarge permettant une exécution rapide des ETLs. Une fois les ETL 1 et 2 effectué, les EMR sont résiliés.  
+Chaque EMR est constitué de 7 machines m4.xlarge permettant une exécution rapide des ETLs. Une fois les ETL 1 et 2 effectués, les EMR sont résiliés.  
 
 ***DataWarehouse : EC2 - Cassandra***
 
@@ -83,18 +83,18 @@ Chaque EMR est constitué de 7 machines m4.xlarge permettant une exécution rapi
   <img src="img/EC2.png" width="250" />
 </p>
 
-Le DataWarehouse consitute le lieux de stockage des données pré-traitées propre à l'application voulu par une business unit. Ces données sont directement destinées aux métiers et peuvent être analysés immédiatement. Dans notre cas cette business unit correspond à la recherche sur le COVID-19. Toutefois notre architecture permettrait d'instancier d'autres DataWarehouse destinés à d'autres business unit (juridique, marketing ...) en répliquant la partie EC2 - Cassandra.
+Le DataWarehouse consitute le lieux de stockage des données pré-traitées propre à l'application d'une business unit. Ces données sont directement destinées aux métiers et peuvent être analysées immédiatement. Dans notre cas cette business unit correspond à la recherche sur le COVID-19. Toutefois notre architecture permettrait d'instancier d'autres DataWarehouse destinés à d'autres business unit (juridique, marketing ...) en répliquant la partie EC2 - Cassandra.
 
-Les configurations retenues pour l'instanciation de notre cluster Cassandra sont les suivantes :
+Les configurations retenues pour l'instanciation de notre ring Cassandra sont les suivantes :
 
 *Note* : Pour configurer cette architecture chez vous, suivez ce [Tutoriel Cassandra](https://github.com/MathiasNourry/Gdelt_project/tree/main/cassandra)
 
 **Configurations**
 * **EC2 instances** : M4Large 
 * **Replication factor** = 3
-* **Snitch** : Ec2Snitch
-Ce paramètre est optimal pour une utilisation du cluster au sein d'une même région (ce qui est une contrainte imposée par l'utilisation d'un compte AWS étudiant).
-* **Read/Write consistency** = ONE/LOCAL_QUORUM
+* **Snitch** : Ec2Snitch   
+Ce paramètre est optimal pour une utilisation du cluster au sein d'une même région (ce qui est une contrainte imposée par l'utilisation d'un compte AWS Educate).
+* **Read/Write consistency** = ONE/LOCAL_QUORUM   
 Ces choix nous permettent en effet d'offrir à l'utilisateur la possibilité de requêter les données si certains noeuds sont _down_, tout en assurant une consistance raisonnable au moment du chargement des données.
 * **Load** ~1Go de données par noeud
 
@@ -103,14 +103,16 @@ Ces choix nous permettent en effet d'offrir à l'utilisateur la possibilité de 
 </p>
 
 Les données **export** et **mentions** pour une année entière sont injectées dans 2 tables distinctes, permettant à l'utilisateur un requêtage simple et efficace.
+Faute d'espace de stockage, les données **gkg** n'ont pas été chargées sur le ring Casssandra.
+
 
 ### 3. Zeppelin - Analyse des données
 
 Les données sont à présent sur le ring Cassandra, et l'utilisateur peut y accéder en utilisant un **Notebook Zeppelin**, configuré spécifiquement pour dialoguer avec Cassandra (via l'installation d'un connecteur spark-cassandra).
 
 Il existe deux façons distinctes d'obtenir les données :
-* via `CQL` le langage de requête natif de Cassandra. Ce langage impose cependant des contraintes fortes sur la manipulation des données (notamment sur les agrégations et jointures)
-* via `Spark-SQL`, en important les tables depuis Cassandra et en les injectant dans des _vues_ destinées à faciliter l'analyse. C'est cette méthode que nous retenons (exemple ci-dessous)
+- via `CQL` le langage de requête natif de Cassandra. Ce langage impose cependant des contraintes fortes sur la manipulation des données (notamment sur les agrégations et jointures)
+- via `Spark-SQL`, en important les tables depuis Cassandra et en les injectant dans des _vues_ destinées à faciliter l'analyse. C'est cette méthode que nous retenons (exemple ci-dessous)
 ``` scala
 val mentions_from_cass = spark.read.cassandraFormat("mentions", "gdelt_project").load()
 mentions_from_cass.createOrReplaceTempView("mentions")
@@ -143,7 +145,7 @@ order by nb_event desc
 
 **Nombre d'événements médiatiques relatifs au COVID, par pays et par langue**
 
-En observant le nombre d'articles relatifs au COVID par pays et par langue, on peut noter les différences de proportion dans les langues utilisées pour la production d'articles ; ci-dessous des exemples pour la France et l'Italie.
+En observant le nombre d'articles relatifs au COVID par pays et par langue, on peut noter les différences de proportion dans les langues utilisées pour la production d'articles ; ci-dessous des exemples pour la France et l'Inde.
 
 ``` sql
 select country
@@ -192,17 +194,17 @@ limit 15
 
 Le modèle présenté soulève quelques limites et contraintes
 
-Cassandra
+**Cassandra**
 
-Bien que permettant de respecter nos objectifs de disponibilité et de tolérance aux pannes, Cassandra impose une rigidité dans les structures des tables et des requêtes (jointures, et agrégations moins souples qu'en SQL). Pour faciliter la tâche de l'utilisateur, nous avons fait le choix de créer des vues spark-sql sur la base des données requêtées dans Cassanra.
+Bien que permettant de respecter nos objectifs de disponibilité et de tolérance aux pannes, Cassandra impose une rigidité dans les structures des tables et des requêtes (jointures, et agrégations moins souples qu'en SQL). Pour faciliter la tâche de l'utilisateur, nous avons fait le choix de créer des vues spark-sql sur la base des données requêtées dans Cassandra.
 
-Gdelt
+**Gdelt**
 
 L'analyse des données est à prendre dans son ensemble, sans faire de focus précis sur les éléments, en effet :
 - le filtre que nous appliquons sur l'url ne tient pas compte des articles référencés par un numéro &rarr; sous-estimation du nombre d'événements liés au COVID
 - nous ne traitons pas les données de pays manquantes &rarr; sous-estimation du nombre d'événements pour certaines régions
 
-Compte AWS Educate
+**Compte AWS Educate**
 
 Finalement, une des contraintes les plus forte à été liée au compte AWS lui-même :
 - la limite de ressources machines disponible (32 CPUs) a augmenté les temps de traitements et les capacités de stockage
