@@ -2,7 +2,9 @@
   <img src="https://github.com/MathiasNourry/Gdelt_project/blob/main/img/gdelt_global.png" width="700" />
 </p>
 
-#<center>Gdelt - NoSQL Big data implementation from scratch</center>
+<center>
+  <h1>Gdelt - NoSQL Big data implementation from scratch</h1>
+</center>
 
 ## Evolution de la pandémie COVID19 via son impact média
 
