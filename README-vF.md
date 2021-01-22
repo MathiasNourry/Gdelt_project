@@ -23,7 +23,8 @@ Le Gdelt Project vise à réunir les articles de presse du monde entier sous un 
 In fine, 3 sources de données sont mises à disposition :
 - export : données relatives à une publication
 - mentions : données relatives aux mentions de chaque publication 
-- gkg : données relatives aux lieux, acteurs et ton de chaque publication
+- gkg : données relatives aux lieux, acteurs et ton de chaque publication   
+
 Ces 3 sources sont générées par intervalle de 15 minutes et sont indexées selon deux fichiers principaux :
 - [Masterfile : English](http://data.gdeltproject.org/gdeltv2/masterfilelist.txt) : relatif aux publications écrites en anglais
 - [Masterfile : Translation](http://data.gdeltproject.org/gdeltv2/masterfilelist-translation.txt) : relatif aux publications dans leur langue originale (hors anglais)
