@@ -6,7 +6,7 @@
   <h1>Gdelt - NoSQL Big data implementation from scratch</h1>
 </center>
 
-## Evolution de la pandémie COVID19 via son impact média
+## Etude de l'évolution de la pandémie COVID19 via son impact média
 
 _Contributeurs : Vincent, Bardonnet, Alexandre Bréboin, Simon Delarue, Mathias Nourry, Valentin Pannier_
 
