@@ -61,7 +61,7 @@ Au final on souhaite donc une technologie permettant :
 ***DataLake : bucket S3 et ETLs via EMR***
 
 <p align="center">
-  <img src="img/DataLake.png" width="500" />
+  <img src="img/EMR.png" width="500" />
 </p>
 
 Se plaçant dans une configuration professionnelle, notre solution repose sur une distinction claire entre un data lake accessible par des professionnels de la donnée, et un data warehouse disponible pour les applications métiers.
@@ -80,7 +80,7 @@ Chaque EMR est constitué de 7 machines m4.xlarge permettant une exécution rapi
 ***DataWarehouse : EC2 - Cassandra***
 
 <p align="center">
-  <img src="img/DataWarehouse.png" width="500" />
+  <img src="img/EC2.png" width="500" />
 </p>
 
 Le DataWarehouse consitute le lieux de stockage des données pré-traitées propre à l'application voulu par une business unit. Ces données sont directement destinées aux métiers et peuvent être analysés immédiatement. Dans notre cas cette business unit correspond à la recherche sur le COVID-19. Toutefois notre architecture permettrait d'instancier d'autres DataWarehouse destinés à d'autres business unit (juridique, marketing ...) en répliquant la partie EC2 - Cassandra.
