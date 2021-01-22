@@ -87,7 +87,7 @@ Le DataWarehouse consitute le lieux de stockage des données pré-traitées prop
 
 Les configurations retenues pour l'instanciation de notre cluster Cassandra sont les suivantes :
 
-_Note : Pour configurer cette architecture chez vous, suivez ce [Tutoriel Cassandra](https://github.com/MathiasNourry/Gdelt_project/tree/main/cassandra)
+*Note* : Pour configurer cette architecture chez vous, suivez ce [Tutoriel Cassandra](https://github.com/MathiasNourry/Gdelt_project/tree/main/cassandra)
 
 **Configurations**
 * **EC2 instances** : M4Large 
