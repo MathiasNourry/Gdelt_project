@@ -67,15 +67,17 @@ Le data lake est représenté ici par un ensemble de compartiment S3 permettant 
 - des fichiers de données pré-traitées, issues d'un traitement des données brutes
 
 La génération de ces deux formats de fichiers est effectuée sur la base de 2 ETLs exécutés sur des clusters EMR à partir de la technologie Spark.
-Dans un soucis de coûts limités par nos comptes AWS Educate, nous avons fait le choix de disposer de 3 compartiments S3, chacun assurant la sauvegarde des données sur un horizon de 4 mois. Chaque bucket S3 peut ainsi être chargé en données brutes par un EMR qui lui est propre : on dispose ainsi de 3 EMR et de 3 compartiments S3. Chaque EMR est ainsi chargé, sur son périmètre de 4 mois de données :
-- de charger les données brutes au format *.zip* depuis la plateforme Gdelt vers le compartiment S3 qui lui est associé dans un dossier *Raw_data*(ETL 1)
+Dans un soucis de coûts limités par nos comptes AWS Educate, nous avons fait le choix de disposer de 3 compartiments S3, chacun assurant la sauvegarde des données sur un horizon de 4 mois. Chaque bucket S3 peut ainsi être chargé en données brutes par un EMR qui lui est propre : on dispose ainsi de 3 EMR et de 3 compartiments S3. Chaque EMR a pour mission, sur son périmètre de 4 mois de données :
+- de charger les données brutes au format *.zip* depuis la plateforme Gdelt vers le compartiment S3 qui lui est associé dans un dossier *Raw_data* (ETL 1)
 - de pré-traiter ces données, afin de filtrer les données relatives au COVID-19 et de sélectionner les colonnes importantes, et de les charger dans un dossier *Processed_data* dans le compartiment S3 qui lui est associé au format *.parquet* (ETL 2)   
 
 Chaque EMR est constitué de 7 machines m4.xlarge permettant une exécution rapide des ETLs. Une fois les ETL 1 et 2 effectué, les EMR sont résiliés.  
 
-#### EC2 - Cassandra
+***DataWarehouse : EC2 - Cassandra***
 
-Afin de stocker les données préprocessées dans un format exploitable facilement par l'utilisateur, tout en respectant notre souhait d'architecture résiliante, nous avons installé Cassandra **from scratch** sur un ensemble d'instances EC2.
+Le DataWarehouse consitute le lieux de stockage des données pré-traitées propre à l'application voulu par une business unit. Ces données sont directement destinées aux métiers et peuvent être analysés immédiatement. Dans notre cas cette business unit correspond à la recherche sur le COVID-19. Toutefois notre architecture permettrait d'instancier d'autres DataWarehouse destinés à d'autres business unit (juridique, marketing ...) en répliquant la partie EC2 - Cassandra.
+
+Les configurations retenues pour l'instanciation de notre cluster Cassandra sont les suivantes :
 
 _Note : Pour configurer cette architecture chez vous, suivez ce [Tutoriel Cassandra](https://github.com/MathiasNourry/Gdelt_project/tree/main/cassandra)
 
