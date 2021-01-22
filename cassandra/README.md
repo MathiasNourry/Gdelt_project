@@ -44,7 +44,7 @@ openjdk version "1.8.0_275"
 OpenJDK Runtime Environment (build 1.8.0_275-8u275-b01-0ubuntu1~18.04-b01)
 OpenJDK 64-Bit Server VM (build 25.275-b01, mixed mode)
 ```
-### Cassandra - installation
+## Cassandra - installation
 
 Télécharger la dernière version de Cassandra sur le site https://cassandra.apache.org/ et décompresser l'archive obtenue. Dans notre cas, nous utiliserons la version `3.11.9` (Janvier 2021).
 ``` shell
@@ -74,7 +74,7 @@ UN  127.0.0.1  70.7 KiB   256          100.0%            c180d502-ed1a-4b30-880d
 **Bravo ! Le sumbole `UN` signifie que cassandra est bien actif sur ce noeud** (UN = Up and Normal). Il reste à configurer la communication entre les noeuds.
 
 
-### Cassandra - configuration de la communication
+## Cassandra - configuration de la communication
 
 Afin de garantir la bonne communication entre les noeuds, il peut être nécessaire de suivre un certain ordre dans le lancement des daemons cassandra :
 - configurer un premier noeud (noeud 1) (installation de cassandra + configuration de la communication)
@@ -94,7 +94,7 @@ sudo nano <nom_fichier>
 ```
 _Note : Enregistrer le fichier avec `ctrl+x` puis confirmer avec `y` puis `Entrée`_
 
-##### 1. cassandra.yaml
+#### 1. cassandra.yaml
 __Seeds__
 
 Lorsqu'un noeud Cassandra rejoint le "ring", il utilise les données d'un noeud présent afin de s'instancier sur la base de celui-ci. 
@@ -133,7 +133,7 @@ rpc_address: 172.31.51.42
 rpc_port: 9160
 ```
 
-##### 2. cassandra-rackdc.properties
+#### 2. cassandra-rackdc.properties
 
 Commenter toutes les lignes du fichiers pour que les données de snitch considérées soient celles paramétrées dans le fichier précédent.
 &nbsp;
