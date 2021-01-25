@@ -19,7 +19,7 @@ _Contributeurs : Vincent, Bardonnet, Alexandre Bréboin, Simon Delarue, Mathias 
 
 ### 1. Données
 
-Le Gdelt Project vise à réunir les articles de presse du monde entier sous un même endroit. Au-delà d'un simple travail de récolte de données, ces dernières sont analysés pour produire des informations au sujet des thèmes, des sources, des lieux ou encore du ton de l'article.
+Le Gdelt Project vise à réunir les articles de presse du monde entier sous un même endroit. Au-delà d'un simple travail de récolte de données, ces dernières sont analysées pour produire des informations au sujet des thèmes, des sources, des lieux ou encore du ton de l'article.
 In fine, 3 sources de données sont mises à disposition :
 - export : données relatives à des publication
 - mentions : données relatives aux mentions de chaque publication 
