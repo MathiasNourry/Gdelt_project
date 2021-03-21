@@ -17,14 +17,14 @@ $ ssh -L 8890:127.0.0.1:8080 -i \<chemin-vers-keyPair.pem\> ubuntu@\<DNS-address
 > We redirect the port `8080` of the EC2 instance to the port `8890` of the local machine.
 
 
-# Query the Cassandra ring via Apache Zeppelin
+## Query the Cassandra ring via Apache Zeppelin
 
 In the following steps, Zeppelin is installed on one of the instances containing cassandra, and the Cassandra cluster contains 3 nodes. Zeppelin uses the native version of spark (available from the zeppelin packages), and not a spark cluster deployed from scratch.
 
 _[Edit] : zeppelin notebook configurations can be done on a local version (rather than on an EC2 instance)._
 
 
-## Zeppelin
+### Zeppelin
 
 To make requests on the cassandra ring, we will use a Zeppelin notebook configured with a **spark-cassandra connector**.
 
@@ -59,7 +59,7 @@ localhost:8890
 > **Bravo !** Apache Zeppelin is installed. However, it is now necessary to configure the connection with cassandra.
 
 
-## Connect Zeppelin to Cassandra
+### Connect Zeppelin to Cassandra
 
 _ **Note** : In the case of a connection from a local computer to the cassandra ring (stored on an EC2 cluster), you will have to replace the private IPs of the cluster nodes by the **public** IPs._
 
