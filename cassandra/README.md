@@ -13,7 +13,7 @@ We will use:
 >The steps below are to be repeated for each node of the cassandra cluster (i.e. each EC2 instance)
 
 
-# Java
+## Java
 
 Cassandra runs on a JVM, so it is necessary to install Java before you can install and configure Cassandra. We use `Java 8` for compatibility with our version of Cassandra.
 
@@ -52,7 +52,7 @@ OpenJDK 64-Bit Server VM (build 25.275-b01, mixed mode)
 ```
 
 
-# Cassandra - installation
+## Cassandra - installation
 Download the latest version of Cassandra from https://cassandra.apache.org/ and unpack the resulting archive. In our case, we will use the version `3.11.9` (January 2021) :
 ``` shell
 $ wget https://mirrors.ircam.fr/pub/apache/cassandra/3.11.9/apache-cassandra-3.11.9-bin.tar.gz
@@ -83,7 +83,7 @@ UN  127.0.0.1  70.7 KiB   256          100.0%            c180d502-ed1a-4b30-880d
 **Congratulations! The `UN` symbol means that cassandra is active on this node** (UN = Up and Normal). It remains to configure the communication between the nodes.
 
 
-# Cassandra - communication configuration
+## Cassandra - communication configuration
 
 In order to ensure good communication between nodes, it may be necessary to follow a certain order in launching cassandra daemons:
 - configure a first node (node 1) (installation of cassandra + configuration of the communication)
@@ -104,7 +104,7 @@ $ sudo nano <nom_fichier>
 _Note: Save the file with `ctrl+x` then confirm with `y` then `Enter`_
 
 
-## 1. cassandra.yaml
+### 1. cassandra.yaml
 __Seeds__
 
 When a Cassandra node joins the ring, it uses the data of a current node to instantiate itself based on it. 
@@ -145,7 +145,7 @@ rpc_port: 9160
 ```
 
 
-## 2. cassandra-rackdc.properties
+### 2. cassandra-rackdc.properties
 
 Comment all the lines of the file so that the snitch data considered are those set in the previous file.
 &nbsp;
